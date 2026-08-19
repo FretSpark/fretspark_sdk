@@ -46,3 +46,10 @@ export 'src/models/fret_notify.dart';
 // implementation is internal — the SDK instantiates it automatically when
 // no custom transport is passed to [FretSpark.initialize].
 export 'src/transport/fret_transport.dart';
+
+// === Web Bluetooth transport (conditional export) ===
+// On Web platforms, exports the real [WebBluetoothTransport] backed by the
+// Web Bluetooth API. On other platforms, exports a stub that throws
+// [UnsupportedError] when constructed. This allows the SDK to compile on
+// all platforms without requiring `package:web` on mobile/desktop.
+export 'src/transport/web_bluetooth_transport.dart';

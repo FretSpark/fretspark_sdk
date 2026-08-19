@@ -96,44 +96,17 @@ Add the Bluetooth usage descriptions in `ios/Runner/Info.plist`:
 
 ### Web (Chrome / Edge / Opera)
 
-The SDK supports Flutter Web via the **Web Bluetooth API**. This requires a
-custom transport implementation because `flutter_blue_plus` does not support
-Web. The SDK ships an example adapter at
-`example/lib/web_bluetooth_transport.dart`.
+The SDK ships a built-in `WebBluetoothTransport` backed by the **Web
+Bluetooth API**. No extra packages or file copying needed — the `web`
+dependency is already included in the SDK's `pubspec.yaml`.
 
 **Browser support:** Chrome (macOS/Windows/Linux/Android), Edge, Opera.
 **Not supported:** Firefox, Safari (as of 2026).
 
-#### 1. Add the `web` package to your app
-
-```yaml
-# your_app/pubspec.yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  fretspark_sdk:
-    git:
-      url: https://github.com/FretSpark/fretspark_sdk.git
-      ref: main
-  web: ^1.1.0  # Web Bluetooth interop
-```
-
-#### 2. Copy the transport adapter
-
-Copy `example/lib/web_bluetooth_transport.dart` into your app and use
-conditional imports to load it only on Web:
-
-```dart
-// lib/transport.dart
-export 'default_transport.dart'
-    if (dart.library.js_interop) 'web_bluetooth_transport.dart';
-```
-
-#### 3. Inject the Web Bluetooth transport
+#### 1. Inject the Web Bluetooth transport
 
 ```dart
 import 'package:fretspark_sdk/fretspark_sdk.dart';
-import 'web_bluetooth_transport.dart';  // your copy
 
 await FretSpark.instance.initialize(
   brandId: 'auphy',
@@ -141,7 +114,11 @@ await FretSpark.instance.initialize(
 );
 ```
 
-#### 4. Trigger the device picker (user gesture required)
+On non-Web platforms, `WebBluetoothTransport()` throws `UnsupportedError`
+when constructed — use the default `FlutterBlueTransport` (automatic) on
+mobile/desktop.
+
+#### 2. Trigger the device picker (user gesture required)
 
 Web Bluetooth does not support background scanning. The browser shows a
 device-picker dialog when you call `startScan()`. This **must** be triggered
