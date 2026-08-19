@@ -9,20 +9,12 @@ import 'fret_transport.dart';
 /// GATT UUIDs used by FretSpark firmware.
 class _Uuids {
   static const String service = '0000fff0-0000-1000-8000-00805f9b34fb';
-  static const String write = '0000fff3-0000-1000-8000-00805f9b34fb';
-  static const String notify = '0000fff4-0000-1000-8000-00805f9b34fb';
-  static const String classroomId = '0000fff6-0000-1000-8000-00805f9b34fb';
-  static const String gapService = '00001800-0000-1000-8000-00805f9b34fb';
-  static const String gapDeviceName = '00002a00-0000-1000-8000-00805f9b34fb';
 
   static bool _matchShort(String uuid, String short16) {
     final lower = uuid.toLowerCase();
     return lower == short16 || lower.endsWith('-0000-1000-8000-00805f9b34fb') &&
         lower.startsWith('0000$short16');
   }
-
-  static bool isService(String uuid) =>
-      _matchShort(uuid, 'fff0') || uuid.toLowerCase() == service;
 
   static bool isWrite(String uuid) => _matchShort(uuid, 'fff3');
 

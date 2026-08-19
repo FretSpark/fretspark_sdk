@@ -72,7 +72,7 @@ class WebBluetoothTransport extends FretTransport {
   BluetoothRemoteGATTCharacteristic? _writeChar;
   BluetoothRemoteGATTCharacteristic? _notifyChar;
 
-  final StreamController<List<int>> _notifyController =
+  final StreamController<List<int>> _notifyStreamController =
       StreamController<List<int>>.broadcast();
 
   @override
@@ -125,7 +125,7 @@ class WebBluetoothTransport extends FretTransport {
         name: name,
         rssi: 0, // Web Bluetooth does not expose RSSI.
       ));
-    } on JSException catch (e) {
+    } catch (e) {
       throw FretTransportException('Device selection cancelled or failed: $e');
     }
   }
@@ -187,9 +187,9 @@ class WebBluetoothTransport extends FretTransport {
         device: _webDevice!,
         writeChar: _writeChar!,
         notifyChar: _notifyChar!,
-        notifyStream: _notifyController.stream,
+        notifyStream: _notifyStreamController.stream,
       );
-    } on JSException catch (e) {
+    } catch (e) {
       throw FretTransportException('GATT connection failed: $e');
     }
   }
@@ -233,7 +233,7 @@ class WebBluetoothTransport extends FretTransport {
   void dispose() {
     _scanController.close();
     _connectionController.close();
-    _notifyController.close();
+    _notifyStreamController.close();
   }
 
   // === Internal: notify callback ===
@@ -248,7 +248,7 @@ class WebBluetoothTransport extends FretTransport {
     for (int i = 0; i < dataView.byteLength; i++) {
       bytes.add(dataView.getUint8(i));
     }
-    _notifyController.add(bytes);
+    _notifyStreamController.add(bytes);
   }
 
   // === Internal: GATT operations used by _WebBluetoothDevice ===
@@ -265,7 +265,7 @@ class WebBluetoothTransport extends FretTransport {
       } catch (_) {
         await _writeChar!.writeValueWithResponse(payload).toDart();
       }
-    } on JSException catch (e) {
+    } catch (e) {
       throw FretTransportException('GATT write failed: $e');
     }
   }
@@ -281,8 +281,8 @@ class WebBluetoothTransport extends FretTransport {
 
       // 4-byte big-endian uint32.
       if (dataView.byteLength < 4) return null;
-      return dataView.getUint32(0, Endianness.bigEndian);
-    } on JSException {
+      return dataView.getUint32(0, Endian.big);
+    } catch (_) {
       // Characteristic may be missing on some firmware versions.
       return null;
     }
@@ -300,9 +300,9 @@ class WebBluetoothTransport extends FretTransport {
 
       // 4-byte big-endian uint32.
       final buffer = ByteData(4);
-      buffer.setUint32(0, id, Endianness.bigEndian);
+      buffer.setUint32(0, id, Endian.big);
       await char.writeValueWithResponse(buffer.buffer.asUint8List()).toDart();
-    } on JSException catch (e) {
+    } catch (e) {
       throw FretTransportException('Classroom ID write failed: $e');
     }
   }
@@ -337,9 +337,6 @@ class _WebBluetoothDevice extends FretBleDevice {
 
   @override
   Future<void> write(Uint8List payload) => transport._write(payload);
-
-  @override
-  Stream<List<int>> get notifyStream => this.notifyStream;
 
   @override
   Future<int?> readClassroomId() => transport._readClassroomId();

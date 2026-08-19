@@ -34,6 +34,7 @@ void main() {
   });
 
   // Helper: build a firmware->app notify frame for [cmd] carrying [data].
+  // ignore: unused_element
   List<int> fwNotifyFrame(int cmd, List<int> data) {
     final len = data.length;
     return <int>[kFrameStartFWToApp, cmd, len, ...data, kFrameEndFWToApp];

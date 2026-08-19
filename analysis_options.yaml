@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    # Web Bluetooth implementation uses dart:js_interop and package:web types
+    # that only resolve when analyzing for the Web platform. Exclude from
+    # non-Web analysis to avoid false positives in CI.
+    - lib/src/transport/web_bluetooth_web.dart
+
+linter:
+  rules:
+    - cancel_subscriptions
+    - close_sinks

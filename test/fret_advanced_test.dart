@@ -8,8 +8,6 @@
 //   (errors are swallowed).
 // - bypassQueue=true throws UnimplementedError (reserved for future use).
 
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fretspark_sdk/src/api/fret_advanced.dart';

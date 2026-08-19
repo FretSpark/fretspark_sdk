@@ -11,8 +11,6 @@
 //   - deleteLocalFirmware: best-effort, does not throw
 //   - dispose: closes status stream
 
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fretspark_sdk/src/api/fret_firmware.dart';
 import 'package:shared_preferences/shared_preferences.dart';

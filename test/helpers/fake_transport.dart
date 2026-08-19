@@ -117,6 +117,7 @@ class FakeTransport implements FretTransport {
   }
 
   /// Release internal stream controllers.
+  @override
   Future<void> dispose() async {
     await _scanController.close();
     await _connStateController.close();
