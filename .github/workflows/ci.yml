@@ -7,10 +7,6 @@ on:
   pull_request:
     branches: [main, master]
 
-defaults:
-  run:
-    working-directory: packages/fretspark_sdk
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,4 +26,4 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Run tests
-        run: flutter test --no-pub
+        run: flutter test
