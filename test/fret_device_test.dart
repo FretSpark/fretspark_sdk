@@ -69,7 +69,7 @@ void main() {
 
     test('full byte layout matches firmware comment in commands.dart', () async {
       // The firmware comment in commands.dart says:
-      //   payload = [yearH, yearL, month, day, hour, minute, second] (7 字节)
+      //   payload = [yearH, yearL, month, day, hour, minute, second] (7 bytes)
       // Verify the actual frame LEN matches that comment.
       await device.setRtcTime(DateTime(2026, 8, 18, 14, 30, 45));
       expect(lastFrameOf(ble).length, 7);

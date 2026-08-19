@@ -1,14 +1,17 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-// FretClassroom 内部需要调用 FretDevice.send 发送课堂模式命令。
+// FretClassroom internally needs to call FretDevice.send to send
+// classroom-mode commands.
 
 import '../core/commands.dart';
 import '../models/fret_device.dart';
 
 /// Classroom / local-teaching mode API.
 ///
-/// 通过设备间专用广播信道同步 LED 状态:一台"教师"设备可将其当前 LED
-/// 状态推送给一台或多台"学生"设备(不经 BLE GATT 的侧信道)。适用于课堂
-/// 场景,教师希望所有学生的指板实时镜像自己的指板。
+/// Syncs LED state across devices via a dedicated broadcast channel
+/// between devices: a single "teacher" device can push its current LED
+/// state to one or more "student" devices (a side channel outside BLE
+/// GATT). Suitable for classroom scenarios where the teacher wants every
+/// student's fretboard to mirror their own fretboard in real time.
 ///
 /// The SDK only exposes the start/stop primitives; the brand APP is
 /// responsible for:
@@ -23,9 +26,9 @@ import '../models/fret_device.dart';
 class FretClassroom {
   /// Start broadcasting LED state as a teacher.
   ///
-  /// After this call, the firmware enters 教师广播模式 and pushes each
-  /// rendered LED frame to the classroom channel identified by the
-  /// device's classroom ID.
+  /// After this call, the firmware enters teacher broadcast mode and
+  /// pushes each rendered LED frame to the classroom channel identified
+  /// by the device's classroom ID.
   ///
   /// Only one device in a classroom should call this; the others should
   /// call [startStudent]. The brand APP is responsible for enforcing
@@ -36,10 +39,10 @@ class FretClassroom {
 
   /// Start listening for teacher broadcasts as a student.
   ///
-  /// After this call, the firmware enters 学生监听模式 and overwrites
-  /// its own LED state with whatever the teacher broadcasts on the same
-  /// classroom ID. Local LED commands sent to this device are ignored
-  /// until [stop] is called.
+  /// After this call, the firmware enters student listener mode and
+  /// overwrites its own LED state with whatever the teacher broadcasts
+  /// on the same classroom ID. Local LED commands sent to this device
+  /// are ignored until [stop] is called.
   Future<void> startStudent(FretDevice device) async {
     await device.send(FretCommand.studentRxStart, <int>[]);
   }

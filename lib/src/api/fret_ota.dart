@@ -1,5 +1,5 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-// FretOTA 内部需要调用 FretDevice.send 触发 OTA 模式。
+// FretOTA internally needs to call FretDevice.send to trigger OTA mode.
 
 import 'dart:async';
 import 'dart:typed_data';

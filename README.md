@@ -68,13 +68,13 @@ Future<void> main() async {
                        │
         ┌──────────────┴──────────────┐
         ▼                             ▼
-┌──────────────────┐         ┌────────────────────┐
-│  transport/      │         │     core/          │
-│  FretTransport   │         │  协议编解码        │
-│  FlutterBlue     │         │  发送队列          │
-│  (default impl)  │         │  批量传输          │
-└──────────────────┘         │  通知分发(内部实现)│
-                             └────────────────────┘
+┌──────────────────┐         ┌────────────────────────────┐
+│  transport/      │         │     core/                    │
+│  FretTransport   │         │  Protocol codec              │
+│  FlutterBlue     │         │  Send queue                  │
+│  (default impl)  │         │  Batch transfer              │
+└──────────────────┘         │  Notify dispatch (internal)  │
+                             └────────────────────────────┘
 ```
 
 The protocol layer (`core/`) and the default transport implementation
@@ -208,10 +208,10 @@ final path = await FretSpark.instance.firmware.checkAndDownload(
   manifestUrl: FretSpark.instance.manifestUrl!,
   brandId: device.brandId,
   currentVersion: device.firmwareVersion,
-  onProgress: (p) => print('下载 ${(p * 100).toInt()}%'),
+  onProgress: (p) => print('Downloading ${(p * 100).toInt()}%'),
 );
 if (path == null) {
-  print('已是最新版本或检查失败');
+  print('Already up to date or check failed');
   return;
 }
 

@@ -1,14 +1,14 @@
-# === Dart / Flutter 构建产物 ===
+# === Dart / Flutter build artifacts ===
 .dart_tool/
 .packages
 build/
 pubspec.lock
 
-# Flutter 插件解析缓存
+# Flutter plugin resolution cache
 .flutter-plugins
 .flutter-plugins-dependencies
 
-# === IDE / 编辑器 ===
+# === IDE / editor ===
 .idea/
 .vscode/
 *.iml
@@ -18,27 +18,27 @@ pubspec.lock
 .classpath
 .settings/
 
-# === 操作系统 ===
+# === Operating system ===
 .DS_Store
 Thumbs.db
 Desktop.ini
 
-# === 临时文件 ===
+# === Temporary files ===
 *.log
 *.tmp
 *.swp
 *~
 
-# === 代码生成产物（本包暂未使用，预留） ===
+# === Code generation artifacts (not yet used by this package, reserved) ===
 *.g.dart
 *.freezed.dart
 *.mocks.dart
 
-# === 测试覆盖率 ===
+# === Test coverage ===
 coverage/
 lcov.info
 
-# === pub.dev 发布相关 ===
-# 不发布 .git 本身和 CI 配置到 pub.dev
+# === pub.dev publishing ===
+# Do not publish .git itself and CI config to pub.dev
 .pub-cache/
 .pub-packages/

@@ -23,16 +23,19 @@ class FretCommand {
   // === Power / brightness / color ===
   static const int power = 0x01; // [0x01=on / 0x00=off]
 
-  /// 内部使用:让设备重启进入 OTA 模式(通过 runtime command service 发送)。
-  /// 复用 [power] 的 0x01 字节但参数不同,故单独命名。
+  /// Internal use: tells the device to reboot into OTA mode (sent via
+  /// the runtime command service). Reuses the [power] 0x01 byte but
+  /// with different params, hence the separate name.
   static const int enterOta = 0x01;
 
-  /// RGB 排列方式 (0=矩阵排列 / 1=线性排列)。
-  /// 用于适配 WS2812/SK6812 等不同灯珠排列的硬件。
+  /// RGB layout mode (0 = matrix layout / 1 = linear layout).
+  /// Used to adapt to hardware with different LED arrangements such
+  /// as WS2812/SK6812.
   static const int linearLayout = 0x02; // [0/1]
 
-  /// 设置 LED 灯珠数量 (uint16 big-endian)。
-  /// 用于 APP 端动态调整固件处理的灯珠数,适配不同长度的灯带。
+  /// Set the LED count (uint16 big-endian).
+  /// Used by the APP to dynamically adjust the number of LEDs the
+  /// firmware drives, adapting to strips of different lengths.
   static const int ledCount = 0x03; // [countH, countL]
 
   static const int color = 0x04; // [hueH, hueL, satH, satL, 0, 0]
@@ -45,46 +48,56 @@ class FretCommand {
   // === Notify: battery ===
   static const int batteryNotify = 0x0A; // [level, mvH, mvL]
 
-  /// 同步 RTC 时间 (固件用于 0x0D 定时开关机的基准时钟)。
-  /// payload = [yearH, yearL, month, day, hour, minute, second] (7 字节)
+  /// Sync the RTC time (firmware uses this as the reference clock for
+  /// the 0x0D scheduled power on/off).
+  /// payload = [yearH, yearL, month, day, hour, minute, second] (7 bytes)
   static const int rtcTime = 0x0B; // [yyH, yyL, MM, dd, HH, mm, ss]
 
-  /// 触发固件主动上报状态 (电量/配置等)。
-  /// 固件内部 send_type_request(8) 与 send_type_request(9)。
-  /// payload = [0x01] (目前仅支持 0x01)
+  /// Trigger the firmware to proactively report its status (battery,
+  /// config, etc.). Firmware internally calls send_type_request(8) and
+  /// send_type_request(9).
+  /// payload = [0x01] (currently only 0x01 is supported)
   static const int queryStatus = 0x0C; // [0x01]
 
-  /// 设置定时开关机 (依赖 0x0B 同步的 RTC 时间)。
+  /// Set scheduled power on/off (depends on the RTC time synced via 0x0B).
   /// payload = [slot, onOff, hour, minute, second, reserved]
-  ///   slot: 定时槽编号 (固件保留,通常为 0)
-  ///   onOff: 0=定时关, 非0=定时开
-  ///   hour/minute/second: 触发时刻
-  ///   reserved: 预留字节 (固件写入 device_time_*[4], 目前固定为 0)
+  ///   slot: timer slot index (firmware-reserved, usually 0)
+  ///   onOff: 0 = scheduled power-off, non-zero = scheduled power-on
+  ///   hour/minute/second: trigger time of day
+  ///   reserved: reserved byte (firmware writes to device_time_*[4],
+  ///     currently fixed at 0)
   static const int timer = 0x0D; // [slot, onOff, HH, mm, ss, 0x00]
 
   // === Voice / mic ===
   static const int micSource =
       0x0F; // [0=appMic/1=localMic/6=vibration/0xFF=off]
-  /// **已废弃**: 此命令在固件中同时承担"静态色"和"APP 麦克风能量注入"
-  /// 两个相互冲突的职责(会把 device_rgb_state 钉到 4 关闭 AI 律动渲染)。
-  /// SDK 已用 [fillColor] (0x15) + [energyInject] (0x26) 两条命令替代,
-  /// 品牌方应避免使用本命令。详见 CHANGELOG。
+  /// **Deprecated**: this command serves two conflicting duties in the
+  /// firmware — "static color" and "APP mic energy injection" (it pins
+  /// device_rgb_state to 4, disabling AI rhythm rendering).
+  /// The SDK has replaced it with [fillColor] (0x15) + [energyInject]
+  /// (0x26). Brand apps should avoid this command. See CHANGELOG.
   static const int staticColor = 0x10; // legacy, replaced by fillColor + energyInject
   static const int voiceMode = 0x11; // [0x00=on / 0xFF=off]
   static const int voiceSensitivity = 0x12; // [value]
 
-  /// 物理旋钮 HSL 上报 (固件主动通知,APP 也可模拟旋钮输入)。
+  /// Physical knob HSL report (firmware-pushed notify; the APP may
+  /// also simulate knob input).
   /// payload = [knobValueH, knobValueL] (uint16, 0-360)
-  /// **注**: 物理旋钮场景,APP 端少用,保留供高级开发者使用。
+  /// **Note**: rarely used on the APP side in the physical-knob
+  /// scenario; kept for advanced developers.
   static const int knobHsl = 0x13; // [valH, valL]
 
-  /// 自定义连续段 LED 颜色 (从 start_index 开始连续写入 N 个 LED)。
+  /// Custom continuous-segment LED colors (writes N consecutive LEDs
+  /// starting at start_index).
   /// payload = [startIndex, r1, g1, b1, r2, g2, b2, ...]
-  ///   len (BLE 帧中的 LEN 字段) = 1 + 3N (N = LED 个数)
-  /// 与 [batchData] (0x16) 的区别:
-  ///   - 0x14 是连续段(每颗 LED 索引递增),单帧即刷新,性能高
-  ///   - 0x16 是稀疏段(每颗 LED 索引独立指定),需 0x1C/0x1D 批量包装
-  /// 单包 N ≤ [maxLedsPerFillRangePacket] (BLE 帧长约束)。
+  ///   len (the LEN field in the BLE frame) = 1 + 3N (N = LED count)
+  /// Difference from [batchData] (0x16):
+  ///   - 0x14 is a contiguous segment (each LED index increments by 1),
+  ///     refreshed in a single frame, high performance.
+  ///   - 0x16 is a sparse segment (each LED index is specified
+  ///     independently) and must be wrapped by 0x1C/0x1D batch transfer.
+  /// Single-packet N <= [maxLedsPerFillRangePacket] (BLE frame length
+  /// constraint).
   static const int fillRange = 0x14; // [start, r,g,b, r,g,b, ...]
 
   // === Drawing / fill ===
@@ -95,10 +108,13 @@ class FretCommand {
   static const int groupMap = 0x19; // [baseIdx, ...groupIds] or [] to clear
   static const int groupColor = 0x1A; // [gid, r, g, b]
 
-  /// 设置音乐风格 (独立于 [mode] 0x06 与 [musicMode] 0x09 的另一套风格系统)。
-  /// 固件内调用 apply_music_style(styleId),触发独立的渲染管线。
-  /// payload = [styleId] (单字节,0-255)
-  /// **注**: 固件中 styleId >= 100 会被重置为 0 (用于切换拾音源时的保护逻辑)。
+  /// Set the music style (a style system independent of [mode] 0x06 and
+  /// [musicMode] 0x09).
+  /// The firmware internally calls apply_music_style(styleId), triggering
+  /// an independent render pipeline.
+  /// payload = [styleId] (single byte, 0-255)
+  /// **Note**: in the firmware, styleId >= 100 is reset to 0 (protection
+  /// logic used when switching the pickup source).
   static const int musicStyle = 0x1B; // [styleId]
 
   static const int batchBegin = 0x1C; // [packetCount] (0 = state-only)
@@ -149,7 +165,7 @@ class FretCommand {
 
   /// Max LEDs per [fillRange] (0x14) single packet.
   /// Frame = [0xBC, 0x14, len, start, r,g,b × N, 0x55] = 6 + 3N.
-  /// MTU=247 -> writeWithoutResponse max 244 -> N <= 79 (留余量取 79).
+  /// MTU=247 -> writeWithoutResponse max 244 -> N <= 79 (kept at 79 with margin).
   static const int maxLedsPerFillRangePacket = 79;
 
   /// Firmware BLE_RX_FRAME_MAX_LEN. Single packets must not exceed this.

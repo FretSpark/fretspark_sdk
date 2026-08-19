@@ -1,31 +1,31 @@
-# FretSpark SDK 开发者接入指南
+# FretSpark SDK Developer Integration Guide
 
-本指南帮助第三方开发者快速接入 FretSpark SDK，实现智能吉他指板设备的 BLE 连接、LED 控制、固件升级等功能。
+This guide helps third-party developers quickly integrate the FretSpark SDK to enable BLE connection, LED control, firmware upgrade, and other features for smart guitar fretboard devices.
 
-## 目录
+## Table of Contents
 
-- [环境要求](#环境要求)
-- [安装](#安装)
-- [平台配置](#平台配置)
-- [快速开始](#快速开始)
-- [核心 API 总览](#核心-api-总览)
-- [设备连接](#设备连接)
-- [LED 控制](#led-控制)
-- [指板学习](#指板学习)
-- [课堂模式](#课堂模式)
-- [节拍器](#节拍器)
-- [OTA 固件升级](#ota-固件升级)
-- [固件下载器](#固件下载器)
-- [品牌配置](#品牌配置)
-- [高级用法](#高级用法)
-- [错误处理](#错误处理)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Platform Configuration](#platform-configuration)
+- [Quick Start](#quick-start)
+- [Core API Overview](#core-api-overview)
+- [Device Connection](#device-connection)
+- [LED Control](#led-control)
+- [Fretboard Learning](#fretboard-learning)
+- [Classroom Mode](#classroom-mode)
+- [Metronome](#metronome)
+- [OTA Firmware Upgrade](#ota-firmware-upgrade)
+- [Firmware Downloader](#firmware-downloader)
+- [Brand Configuration](#brand-configuration)
+- [Advanced Usage](#advanced-usage)
+- [Error Handling](#error-handling)
 - [FAQ](#faq)
 
 ---
 
-## 环境要求
+## Requirements
 
-| 项目 | 最低版本 |
+| Item | Minimum Version |
 |---|---|
 | Flutter | 3.24.0 |
 | Dart SDK | 3.5.0 |
@@ -34,19 +34,19 @@
 
 ---
 
-## 安装
+## Installation
 
-在 `pubspec.yaml` 中添加依赖：
+Add the dependency in `pubspec.yaml`:
 
 ```yaml
 dependencies:
   fretspark_sdk:
     git:
       url: https://github.com/FretSpark/fretspark_sdk.git
-      ref: main  # 或指定版本 tag，如 v1.4.0
+      ref: main  # Or specify a version tag, e.g. v1.4.0
 ```
 
-然后执行：
+Then run:
 
 ```bash
 flutter pub get
@@ -54,24 +54,24 @@ flutter pub get
 
 ---
 
-## 平台配置
+## Platform Configuration
 
 ### Android
 
-在 `android/app/src/main/AndroidManifest.xml` 中添加 BLE 权限：
+Add BLE permissions in `android/app/src/main/AndroidManifest.xml`:
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- BLE 扫描权限 -->
+    <!-- BLE scan permission -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation" />
-    <!-- BLE 连接权限 -->
+    <!-- BLE connect permission -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- 如果需要定位才能扫描（Android 11 及以下） -->
+    <!-- Required to scan on Android 11 and below -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- BLE 硬件声明 -->
+    <!-- BLE hardware declaration -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
     <application>
@@ -82,20 +82,20 @@ flutter pub get
 
 ### iOS
 
-在 `ios/Runner/Info.plist` 中添加蓝牙使用描述：
+Add the Bluetooth usage descriptions in `ios/Runner/Info.plist`:
 
 ```xml
 <key>NSBluetoothAlwaysUsageDescription</key>
-<string>需要蓝牙权限来连接和控制吉他指板设备</string>
+<string>Bluetooth permission is required to connect and control the guitar fretboard device</string>
 <key>NSBluetoothPeripheralUsageDescription</key>
-<string>需要蓝牙权限来连接和控制吉他指板设备</string>
+<string>Bluetooth permission is required to connect and control the guitar fretboard device</string>
 ```
 
 ---
 
-## 快速开始
+## Quick Start
 
-5 分钟实现「扫描设备 → 连接 → 点亮和弦」的完整流程：
+Implement the full flow of "scan device -> connect -> light up chord" in 5 minutes:
 
 ```dart
 import 'package:flutter/material.dart';
@@ -128,20 +128,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _init() async {
-    // 1. 初始化 SDK（传入你的 brandId）
+    // 1. Initialize the SDK (pass in your brandId)
     await FretSpark.instance.initialize(brandId: 'auphy');
 
-    // 2. 请求蓝牙权限
+    // 2. Request Bluetooth permissions
     await FretSpark.instance.connection.requestPermissions();
 
-    // 3. 监听扫描结果
+    // 3. Listen for scan results
     FretSpark.instance.connection.scanResults.listen((r) {
       if (!_results.any((e) => e.id == r.id)) {
         setState(() => _results.add(r));
       }
     });
 
-    // 4. 开始扫描
+    // 4. Start scanning
     await FretSpark.instance.connection.startScan();
   }
 
@@ -160,12 +160,12 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('固件版本: ${_device!.firmwareVersion}'),
-              Text('LED 数量: ${_device!.ledCount}'),
+              Text('Firmware version: ${_device!.firmwareVersion}'),
+              Text('LED count: ${_device!.ledCount}'),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  // 点亮 C 大调和弦
+                  // Light up the C major chord
                   await FretSpark.instance.led.showChord(
                     _device!,
                     root: NoteName.c,
@@ -173,14 +173,14 @@ class _HomePageState extends State<HomePage> {
                     color: FretColor.green,
                   );
                 },
-                child: const Text('显示 C 大调和弦'),
+                child: const Text('Show C major chord'),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  // 清除所有 LED
+                  // Clear all LEDs
                   await FretSpark.instance.led.clearAll(_device!);
                 },
-                child: const Text('清除 LED'),
+                child: const Text('Clear LEDs'),
               ),
             ],
           ),
@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('扫描设备')),
+      appBar: AppBar(title: const Text('Scan devices')),
       body: ListView(
         children: _results
             .map((r) => ListTile(
@@ -207,84 +207,84 @@ class _HomePageState extends State<HomePage> {
 
 ---
 
-## 核心 API 总览
+## Core API Overview
 
-SDK 通过 `FretSpark.instance` 单例提供以下子 API：
+The SDK exposes the following sub-APIs through the `FretSpark.instance` singleton:
 
-| Getter | 类型 | 用途 |
+| Getter | Type | Purpose |
 |---|---|---|
-| `.connection` | FretConnection | BLE 扫描、连接、握手 |
-| `.led` | FretLED | LED 颜色、效果、模式、学习灯 |
-| `.ota` | FretOTA | 固件 OTA 升级 |
-| `.metronome` | FretMetronome | 节拍器 |
-| `.classroom` | FretClassroom | 课堂模式（教师/学生） |
-| `.firmware` | FretFirmwareDownloader | 固件下载、版本检查 |
-| `.brand` | FretBrand | 品牌配置管理 |
-| `.transport` | FretTransport | 底层 BLE 传输（高级） |
+| `.connection` | FretConnection | BLE scan, connect, handshake |
+| `.led` | FretLED | LED color, effects, modes, learning lights |
+| `.ota` | FretOTA | Firmware OTA upgrade |
+| `.metronome` | FretMetronome | Metronome |
+| `.classroom` | FretClassroom | Classroom mode (teacher/student) |
+| `.firmware` | FretFirmwareDownloader | Firmware download, version check |
+| `.brand` | FretBrand | Brand configuration management |
+| `.transport` | FretTransport | Low-level BLE transport (advanced) |
 
-使用前必须先初始化：
+It must be initialized before use:
 
 ```dart
 await FretSpark.instance.initialize(
-  brandId: 'auphy',       // 必填：你的品牌 ID
-  manifestUrl: 'https://your-server.com/manifest.json',  // 可选：固件 manifest URL
-  brandConfigUrl: 'https://your-server.com/brands.json',  // 可选：云端品牌配置 URL
+  brandId: 'auphy',       // Required: your brand ID
+  manifestUrl: 'https://your-server.com/manifest.json',  // Optional: firmware manifest URL
+  brandConfigUrl: 'https://your-server.com/brands.json',  // Optional: cloud brand config URL
 );
 ```
 
 ---
 
-## 设备连接
+## Device Connection
 
-### 扫描
+### Scan
 
 ```dart
-// 监听扫描结果（自动按品牌过滤）
+// Listen for scan results (automatically filtered by brand)
 FretSpark.instance.connection.scanResults.listen((result) {
-  print('发现设备: ${result.name} (${result.id})');
+  print('Found device: ${result.name} (${result.id})');
 });
 
-// 开始扫描（默认 10 秒超时）
+// Start scanning (default 10-second timeout)
 await FretSpark.instance.connection.startScan();
 
-// 手动停止
+// Stop manually
 await FretSpark.instance.connection.stopScan();
 ```
 
-### 连接
+### Connect
 
 ```dart
-// 连接设备（自动执行握手：查询固件版本、LED 数量、索引模式、课堂 ID）
+// Connect to a device (handshake is performed automatically: query firmware version, LED count, index mode, classroom ID)
 final device = await FretSpark.instance.connection.connect(deviceId);
 
-// 连接后可直接读取设备信息
-print('固件版本: ${device.firmwareVersion}');    // e.g. "3.1.3.4"
-print('LED 数量: ${device.ledCount}');          // e.g. 126
-print('最大品数: ${device.maxFret}');           // e.g. 20
-print('课堂 ID: ${device.classroomId}');        // e.g. 0
-print('电量: ${device.batteryLevel}%');         // e.g. 85
+// After connecting, device info can be read directly
+print('Firmware version: ${device.firmwareVersion}');    // e.g. "3.1.3.4"
+print('LED count: ${device.ledCount}');          // e.g. 126
+print('Max fret: ${device.maxFret}');           // e.g. 20
+print('Classroom ID: ${device.classroomId}');        // e.g. 0
+print('Battery: ${device.batteryLevel}%');         // e.g. 85
 ```
 
-### 监听设备状态
+### Listen to Device State
 
 ```dart
-// 监听断线
+// Listen for disconnection
 FretSpark.instance.connection.onCurrentDeviceStateChanged.listen((connected) {
-  if (!connected) print('设备已断开');
+  if (!connected) print('Device disconnected');
 });
 
-// 监听电量变化
+// Listen for battery changes
 device.onBatteryChanged.listen((battery) {
-  print('电量: ${battery.level}%, 电压: ${battery.voltageMv}mV');
+  print('Battery: ${battery.level}%, voltage: ${battery.voltageMv}mV');
 });
 
-// 监听固件版本变化
+// Listen for firmware version queries
 device.onFirmwareVersionQueried.listen((version) {
-  print('固件版本: ${version.formatted}');
+  print('Firmware version: ${version.formatted}');
 });
 ```
 
-### 断开
+### Disconnect
 
 ```dart
 await FretSpark.instance.connection.disconnect();
@@ -292,59 +292,59 @@ await FretSpark.instance.connection.disconnect();
 
 ---
 
-## LED 控制
+## LED Control
 
-### 开关与亮度
+### Power and Brightness
 
 ```dart
-// 开关
+// Power
 await FretSpark.instance.led.setPower(device, on: true);
 
-// 亮度（0-1000）
+// Brightness (0-1000)
 await FretSpark.instance.led.setBrightness(device, 500);
 ```
 
-### 颜色
+### Color
 
 ```dart
-// 用 RGB 填充整个指板
-await FretSpark.instance.led.fillColor(device, FretColor(255, 0, 0));  // 红色
+// Fill the entire fretboard with RGB
+await FretSpark.instance.led.fillColor(device, FretColor(255, 0, 0));  // Red
 
-// 用 HSL 设置基础色
+// Set base color with HSL
 await FretSpark.instance.led.setColor(device, FretHsl(hue: 120, saturation: 800));
 
-// 内置预设
+// Built-in presets
 await FretSpark.instance.led.fillColor(device, FretColor.red);
 await FretSpark.instance.led.fillColor(device, FretColor.blue);
 ```
 
-### 效果模式
+### Effect Mode
 
 ```dart
-// 切换内置效果（1-117）
+// Switch built-in effect (1-117)
 await FretSpark.instance.led.setMode(device, 5);
 
-// 速度（0-255）
+// Speed (0-255)
 await FretSpark.instance.led.setSpeed(device, 128);
 
-// 方向（0=正向, 1=反向）
+// Direction (0=forward, 1=reverse)
 await FretSpark.instance.led.setDirection(device, 0);
 ```
 
-### 硬件布局
+### Hardware Layout
 
 ```dart
-// 设置线性布局（WS2812 灯条）
+// Set linear layout (WS2812 light strip)
 await FretSpark.instance.led.setLinearLayout(device, linear: true);
 
-// 覆盖 LED 数量（如 21 品 = 126 灯）
+// Override LED count (e.g. 21 frets = 126 LEDs)
 await FretSpark.instance.led.setLedCount(device, 126);
 ```
 
-### 范围填充
+### Range Fill
 
 ```dart
-// 从第 0 个 LED 开始填充 5 个不同颜色
+// Fill 5 different colors starting from LED index 0
 await FretSpark.instance.led.fillRange(
   device,
   startIndex: 0,
@@ -353,16 +353,16 @@ await FretSpark.instance.led.fillRange(
     FretColor.yellow, FretColor.cyan,
   ],
 );
-// 最多 79 个 LED/包，超过则分多次调用
+// Max 79 LEDs per packet; multiple calls are split automatically
 ```
 
-### 音乐风格与定时器
+### Music Style and Timer
 
 ```dart
-// 设置音乐风格（0-99）
+// Set music style (0-99)
 await FretSpark.instance.led.setMusicStyle(device, 5);
 
-// 定时开关机（需先同步 RTC）
+// Scheduled power on/off (RTC must be synced first)
 await device.setRtcTime(DateTime.now());
 await FretSpark.instance.led.setTimer(
   device,
@@ -373,63 +373,63 @@ await FretSpark.instance.led.setTimer(
 );
 ```
 
-### 组控
+### Group Control
 
 ```dart
-// 按组分配颜色（一次帧渲染）
+// Assign colors by group (single-frame render)
 await FretSpark.instance.led.applyGroupFrame(
   device,
-  groupAssignments: {0: 1, 1: 1, 2: 1, 3: 2, 4: 2, 5: 2},  // LED 索引 → 组 ID
+  groupAssignments: {0: 1, 1: 1, 2: 1, 3: 2, 4: 2, 5: 2},  // LED index -> group ID
   groupColors: {
-    1: FretColor.red,    // 组 1 = 红色
-    2: FretColor.blue,   // 组 2 = 蓝色
+    1: FretColor.red,    // Group 1 = red
+    2: FretColor.blue,   // Group 2 = blue
   },
 );
 
-// 清除组控
+// Clear group control
 await FretSpark.instance.led.clearGroupMap(device);
 ```
 
-### 左手模式
+### Left-handed Mode
 
 ```dart
-// 启用左手模式（自动镜像 string 索引 0↔5）
+// Enable left-handed mode (automatically mirrors string index 0<->5)
 await FretSpark.instance.led.setLeftHandedMode(true);
-// 持久化到 SharedPreferences，跨设备共享
+// Persisted to SharedPreferences, shared across devices
 ```
 
 ---
 
-## 指板学习
+## Fretboard Learning
 
-### 点亮单个音符
+### Light Up a Single Note
 
 ```dart
-// 第 1 弦（高 E）第 5 品，红色
+// String 1 (high E), fret 5, red
 await FretSpark.instance.led.lightNote(
   device,
   FretNote(string: 0, fret: 5, color: FretColor.red),
 );
 ```
 
-### 批量点亮
+### Batch Light Up
 
 ```dart
-// 同时点亮多个音符（自动去重，最后写入优先）
+// Light up multiple notes simultaneously (auto-deduplicates, last write wins)
 await FretSpark.instance.led.lightNotes(
   device,
   [
-    FretNote(string: 0, fret: 0, color: FretColor.red),    // 高 E 空弦
-    FretNote(string: 1, fret: 2, color: FretColor.green),  // B 弦 2 品
-    FretNote(string: 2, fret: 3, color: FretColor.blue),   // G 弦 3 品
+    FretNote(string: 0, fret: 0, color: FretColor.red),    // High E open string
+    FretNote(string: 1, fret: 2, color: FretColor.green),  // B string, fret 2
+    FretNote(string: 2, fret: 3, color: FretColor.blue),   // G string, fret 3
   ],
 );
 ```
 
-### 和弦
+### Chord
 
 ```dart
-// 显示 C 大调和弦
+// Show the C major chord
 await FretSpark.instance.led.showChord(
   device,
   root: NoteName.c,
@@ -437,13 +437,13 @@ await FretSpark.instance.led.showChord(
   color: FretColor.green,
 );
 
-// 支持的和弦类型：maj, min, 7, maj7, min7, dim, aug, sus2, sus4, ...
+// Supported chord types: maj, min, 7, maj7, min7, dim, aug, sus2, sus4, ...
 ```
 
-### 音阶
+### Scale
 
 ```dart
-// 显示 C 大调音阶
+// Show the C major scale
 await FretSpark.instance.led.showScale(
   device,
   root: NoteName.c,
@@ -451,10 +451,10 @@ await FretSpark.instance.led.showScale(
   color: FretColor.cyan,
 );
 
-// 支持的音阶：major, minor, pentatonic, blues, dorian, mixolydian, ...
+// Supported scales: major, minor, pentatonic, blues, dorian, mixolydian, ...
 ```
 
-### 清除学习灯
+### Clear Learning LEDs
 
 ```dart
 await FretSpark.instance.led.clearLearningLEDs(device);
@@ -462,105 +462,105 @@ await FretSpark.instance.led.clearLearningLEDs(device);
 
 ---
 
-## 课堂模式
+## Classroom Mode
 
-课堂模式允许多台设备同步 LED 状态，适用于教学场景。
+Classroom mode allows multiple devices to synchronize LED state, suitable for teaching scenarios.
 
 ```dart
-// 教师端：开始广播
+// Teacher side: start broadcasting
 await FretSpark.instance.classroom.startTeacher(device);
 
-// 学生端：开始监听
+// Student side: start listening
 await FretSpark.instance.classroom.startStudent(device);
 
-// 停止
+// Stop
 await FretSpark.instance.classroom.stop(device);
 ```
 
 ---
 
-## 节拍器
+## Metronome
 
 ```dart
-// 启动节拍器（BPM 40-240，拍号可选）
+// Start the metronome (BPM 40-240, time signature optional)
 await FretSpark.instance.metronome.start(
   device,
   bpm: 120,
-  timeSignature: FretTimeSignature.fourFour,  // 默认 4/4
+  timeSignature: FretTimeSignature.fourFour,  // Default 4/4
 );
 
-// 切换拍号
+// Switch time signature
 await FretSpark.instance.metronome.start(
   device,
   bpm: 100,
-  timeSignature: FretTimeSignature.sixEight,  // 6/8 拍
+  timeSignature: FretTimeSignature.sixEight,  // 6/8 time
 );
 
-// 停止
+// Stop
 await FretSpark.instance.metronome.stop(device);
 ```
 
-支持的拍号：
+Supported time signatures:
 
-| 枚举 | 拍数 | 含义 |
+| Enum | Beats | Meaning |
 |---|---|---|
-| `FretTimeSignature.twoFour` | 2 | 2/4 拍 |
-| `FretTimeSignature.threeFour` | 3 | 3/4 拍 |
-| `FretTimeSignature.fourFour` | 4 | 4/4 拍（默认） |
-| `FretTimeSignature.sixEight` | 6 | 6/8 拍 |
+| `FretTimeSignature.twoFour` | 2 | 2/4 time |
+| `FretTimeSignature.threeFour` | 3 | 3/4 time |
+| `FretTimeSignature.fourFour` | 4 | 4/4 time (default) |
+| `FretTimeSignature.sixEight` | 6 | 6/8 time |
 
 ---
 
-## OTA 固件升级
+## OTA Firmware Upgrade
 
-OTA 升级分三步：进入 OTA 模式 → 扫描 OTA 设备 → 传输固件。
+OTA upgrade has three steps: enter OTA mode -> scan for OTA device -> transfer firmware.
 
 ```dart
 final ota = FretSpark.instance.ota;
 
-// 1. 通知已连接的设备进入 OTA 模式（设备会重启并改变蓝牙名）
+// 1. Notify the connected device to enter OTA mode (the device will reboot and change its Bluetooth name)
 await ota.enterOtaMode(device);
 
-// 2. 扫描 OTA 模式设备（按 OTA 名称前缀匹配）
+// 2. Scan for OTA-mode devices (matched by OTA name prefix)
 final otaDevice = await ota.scanOtaDevice('AUPHY-OTA');
 if (otaDevice == null) {
-  print('未找到 OTA 设备');
+  print('No OTA device found');
   return;
 }
 
-// 3. 监听升级进度
+// 3. Listen for upgrade progress
 final sub = ota.onProgress.listen((p) {
   print('${p.phase.name}: ${p.sent}/${p.total} bytes');
 });
 
-// 4. 传输固件
+// 4. Transfer firmware
 try {
   await ota.upgrade(otaDevice.id, firmwareBytes);
-  print('升级成功');
+  print('Upgrade succeeded');
 } on FretOtaException catch (e) {
-  print('升级失败: $e');
+  print('Upgrade failed: $e');
 } finally {
   await sub.cancel();
 }
 ```
 
-进度阶段：
+Progress phases:
 
-| 阶段 | 含义 |
+| Phase | Meaning |
 |---|---|
-| `connecting` | 正在连接 OTA 设备 |
-| `starting` | 发送 START_OTA 命令 |
-| `transferring` | 传输固件数据 |
-| `rebooting` | 设备重启中 |
-| `success` | 升级成功 |
+| `connecting` | Connecting to OTA device |
+| `starting` | Sending START_OTA command |
+| `transferring` | Transferring firmware data |
+| `rebooting` | Device is rebooting |
+| `success` | Upgrade succeeded |
 
-### 自定义 BLE 栈
+### Custom BLE Stack
 
-如果不用 `flutter_blue_plus`，可以实现自己的 `FretOtaTransport`：
+If you don't use `flutter_blue_plus`, you can implement your own `FretOtaTransport`:
 
 ```dart
 class MyOtaTransport implements FretOtaTransport {
-  // 实现 connect / discoverOtaService / writeCmd / writeData
+  // Implement connect / discoverOtaService / writeCmd / writeData
   // / rspNotifyStream / disconnect
 }
 
@@ -569,98 +569,98 @@ final ota = FretOTA(transport: MyOtaTransport());
 
 ---
 
-## 固件下载器
+## Firmware Downloader
 
 ```dart
 final fw = FretSpark.instance.firmware;
 
-// 检查更新
+// Check for updates
 final info = await fw.checkForUpdate(
   manifestUrl: 'https://your-server.com/manifest.json',
   brandId: 'auphy',
 );
 if (info != null) {
-  print('新版本: ${info.version} (${info.size} bytes)');
+  print('New version: ${info.version} (${info.size} bytes)');
 }
 
-// 下载固件
+// Download firmware
 final localPath = await fw.checkAndDownload(
   manifestUrl: 'https://your-server.com/manifest.json',
   brandId: 'auphy',
   currentVersion: '3.1.3.4',
 );
 if (localPath != null) {
-  // 用 localPath 读取固件文件，然后调用 ota.upgrade()
+  // Read the firmware file using localPath, then call ota.upgrade()
   final bytes = await File(localPath).readAsBytes();
   await FretSpark.instance.ota.upgrade(deviceId, bytes);
 }
 
-// 查询本地缓存的固件
+// Query locally cached firmware
 final cachedPath = await fw.getLocalFirmwarePath(brandId: 'auphy');
 final cachedVersion = await fw.getLocalFirmwareVersion(brandId: 'auphy');
 
-// 删除本地缓存
+// Delete local cache
 await fw.deleteLocalFirmware();
 ```
 
-### 版本比较
+### Version Comparison
 
 ```dart
-// 静态方法，可直接使用
+// Static method, can be used directly
 final cmp = FretFirmwareDownloader.compareVersions('3.1.3.4', '3.1.3.5');
-// cmp < 0: 当前版本旧
-// cmp == 0: 相同
-// cmp > 0: 当前版本新
+// cmp < 0: current version is older
+// cmp == 0: identical
+// cmp > 0: current version is newer
 ```
 
 ---
 
-## 品牌配置
+## Brand Configuration
 
-SDK 内置 6 个品牌的 fallback 配置。如果需要从云端同步品牌列表：
+The SDK ships with fallback configurations for 6 brands. If you need to sync the brand list from the cloud:
 
 ```dart
 final brand = FretSpark.instance.brand;
 
-// 从云端同步品牌配置（JSON 格式）
+// Sync brand configuration from the cloud (JSON format)
 await brand.syncFromCloud(jsonString);
 
-// 或从 URL 同步
+// Or sync from a URL
 await FretSpark.instance.initialize(
   brandId: 'auphy',
   brandConfigUrl: 'https://your-server.com/brands.json',
 );
 
-// 按设备名匹配品牌
+// Match a brand by device name
 final matched = brand.matchByFirmwareName('AUPHY-1234');
 if (matched != null) {
-  print('匹配到品牌: ${matched.displayName}');
+  print('Matched brand: ${matched.displayName}');
 }
 
-// 设置活跃品牌
+// Set the active brand
 await brand.setActive('auphy');
 
-// 从缓存恢复
+// Restore from cache
 await brand.loadActiveFromCache();
 ```
 
 ---
 
-## 高级用法
+## Advanced Usage
 
-### 发送原始命令
+### Send Raw Command
 
-当 SDK 高阶 API 没有包装某个固件命令时，可用 `FretAdvanced` 逃生通道：
+When a higher-level SDK API doesn't wrap a specific firmware command, use the `FretAdvanced` escape hatch:
 
 ```dart
-// 等待队列完成（推荐）
+// Wait for the queue to complete (recommended)
 await FretAdvanced.sendRaw(
   device,
   FretCommand.musicStyle,
   <int>[42],
 );
 
-// Fire-and-forget（高频动画帧场景）
+// Fire-and-forget (for high-frequency animation frames)
 FretAdvanced.sendRawFireAndForget(
   device,
   FretCommand.energyInject,
@@ -668,75 +668,75 @@ FretAdvanced.sendRawFireAndForget(
 );
 ```
 
-> **警告**：`sendRaw` 绕过 SDK 状态机优化。使用前请确认 SDK 高阶 API 确实没有等价方法。详见 [FretCommand] 命令码注释。
+> **Warning**: `sendRaw` bypasses SDK state machine optimizations. Before using it, confirm that the higher-level SDK API truly has no equivalent method. See the [FretCommand] command code comments for details.
 
-### 监听未知通知
+### Listen for Unknown Notifications
 
 ```dart
-// 捕获 SDK 未识别的固件通知
+// Capture firmware notifications the SDK doesn't recognize
 device.setUnknownNotifyHandler((notify) {
-  print('未知通知: cmd=0x${notify.cmd.toRadixString(16)} data=${notify.data}');
+  print('Unknown notify: cmd=0x${notify.cmd.toRadixString(16)} data=${notify.data}');
 });
 ```
 
-### 查询设备状态
+### Query Device State
 
 ```dart
-// 重新查询固件版本
+// Re-query firmware version
 await device.queryVersion();
 
-// 重新查询 LED 配置
+// Re-query LED configuration
 await device.queryLedConfig();
 
-// 触发固件推送状态（电量等）
+// Trigger firmware to push state (battery, etc.)
 await device.queryStatus();
-// 然后监听 onBatteryChanged 获取结果
+// Then listen to onBatteryChanged to get the result
 
-// 设置课堂 ID
+// Set classroom ID
 await device.setClassroomId(1234);
 
-// 同步 RTC 时间
+// Sync RTC time
 await device.setRtcTime(DateTime.now());
 ```
 
 ---
 
-## 错误处理
+## Error Handling
 
-### 常见异常类型
+### Common Exception Types
 
-| 异常 | 含义 | 处理建议 |
+| Exception | Meaning | Suggested Handling |
 |---|---|---|
-| `FretTransportException` | BLE 连接/扫描失败 | 检查蓝牙开关、权限、设备距离 |
-| `FretOtaException` | OTA 升级失败 | 检查固件文件、设备电量、重试 |
-| `ArgumentError` | 参数校验失败 | 检查参数范围 |
-| `StateError` | 设备已断开或未初始化 | 重新连接/初始化 |
+| `FretTransportException` | BLE connection/scan failed | Check Bluetooth switch, permissions, device distance |
+| `FretOtaException` | OTA upgrade failed | Check firmware file, device battery, retry |
+| `ArgumentError` | Parameter validation failed | Check parameter range |
+| `StateError` | Device disconnected or not initialized | Reconnect/initialize |
 
-### 错误处理示例
+### Error Handling Example
 
 ```dart
 try {
   final device = await FretSpark.instance.connection.connect(deviceId);
   await FretSpark.instance.led.setBrightness(device, 500);
 } on FretTransportException catch (e) {
-  // BLE 层错误
-  print('连接失败: $e');
+  // BLE layer error
+  print('Connection failed: $e');
 } on StateError catch (e) {
-  // 设备已断开
-  print('设备状态错误: $e');
+  // Device disconnected
+  print('Device state error: $e');
 } catch (e) {
-  // 其他错误
-  print('未知错误: $e');
+  // Other errors
+  print('Unknown error: $e');
 }
 ```
 
-### 连接状态监听
+### Connection State Listening
 
 ```dart
 FretSpark.instance.connection.onCurrentDeviceStateChanged.listen((connected) {
   if (!connected) {
-    // 设备意外断开，可以在这里触发重连逻辑
-    print('设备断开，尝试重连...');
+    // Device disconnected unexpectedly; trigger reconnect logic here
+    print('Device disconnected, attempting to reconnect...');
   }
 });
 ```
@@ -745,52 +745,52 @@ FretSpark.instance.connection.onCurrentDeviceStateChanged.listen((connected) {
 
 ## FAQ
 
-### Q: 支持哪些品牌？
+### Q: Which brands are supported?
 
-A: SDK 内置 6 个品牌：FretSpark、AUPHY、Smiger、NATASHA、Bullfighter、Deviser。可通过云端配置添加自定义品牌。
+A: The SDK ships with 6 built-in brands: FretSpark, AUPHY, Smiger, NATASHA, Bullfighter, Deviser. Custom brands can be added via cloud configuration.
 
-### Q: 扫描不到设备？
+### Q: No devices found during scanning?
 
-A: 依次检查：
-1. 手机蓝牙是否已开启
-2. APP 是否已获取蓝牙权限
-3. 设备是否已开机并在广播范围内
-4. Android 12+ 需要运行时动态申请 `BLUETOOTH_SCAN` 和 `BLUETOOTH_CONNECT` 权限
+A: Check in order:
+1. Whether the phone's Bluetooth is turned on
+2. Whether the app has been granted Bluetooth permissions
+3. Whether the device is powered on and within broadcast range
+4. Android 12+ requires runtime requests for `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` permissions
 
-### Q: 连接后设备信息为空？
+### Q: Device info is empty after connecting?
 
-A: 连接握手有 3 秒超时。如果固件版本/LED 数量显示为空/默认值，可能是固件响应超时。可手动调用 `device.queryVersion()` 重新查询。
+A: The connection handshake has a 3-second timeout. If the firmware version/LED count appears empty/default, the firmware response may have timed out. You can manually call `device.queryVersion()` to re-query.
 
-### Q: LED 命令发出后没反应？
+### Q: No response after sending an LED command?
 
-A: 检查设备是否已连接（`device.isConnected`），以及是否处于组控模式（如果是，先调用 `led.clearGroupMap(device)` 退出组控）。
+A: Check whether the device is connected (`device.isConnected`) and whether it is in group control mode (if so, call `led.clearGroupMap(device)` first to exit group control).
 
-### Q: OTA 升级失败怎么办？
+### Q: What to do if the OTA upgrade fails?
 
-A: 检查：
-1. 固件文件是否为空（`fileBytes.isEmpty`）
-2. 设备电量是否充足（建议 >20%）
-3. OTA 设备名前缀是否正确（如 `AUPHY-OTA`）
-4. 确认固件文件品牌与设备品牌一致
+A: Check:
+1. Whether the firmware file is empty (`fileBytes.isEmpty`)
+2. Whether the device battery is sufficient (recommended >20%)
+3. Whether the OTA device name prefix is correct (e.g. `AUPHY-OTA`)
+4. Confirm that the firmware file brand matches the device brand
 
-### Q: 如何在多品牌 APP 中切换品牌？
+### Q: How to switch brands in a multi-brand app?
 
 ```dart
 await FretSpark.instance.brand.setActive('smiger');
-// SDK 会自动用新品牌过滤扫描结果
+// The SDK will automatically filter scan results by the new brand
 ```
 
-### Q: 支持同时连接多个设备吗？
+### Q: Can multiple devices be connected at the same time?
 
-A: `FretSpark.instance` 是单例，同时只管理一个设备。如需多设备，需自行管理多个 `FretConnection` 实例（需要自行初始化 transport）。
+A: `FretSpark.instance` is a singleton and only manages one device at a time. For multiple devices, you need to manage multiple `FretConnection` instances yourself (you must initialize the transport yourself).
 
-### Q: 如何添加自定义品牌？
+### Q: How to add a custom brand?
 
-A: 两种方式：
-1. 通过云端配置（推荐）：提供品牌 JSON URL，调用 `syncFromCloud`
-2. 在 `assets/brands_fallback.json` 中添加品牌（需 fork SDK 仓库）
+A: Two ways:
+1. Via cloud configuration (recommended): provide a brand JSON URL and call `syncFromCloud`
+2. Add the brand in `assets/brands_fallback.json` (requires forking the SDK repository)
 
-品牌 JSON 格式：
+Brand JSON format:
 ```json
 {
   "version": 1,
@@ -808,15 +808,15 @@ A: 两种方式：
 }
 ```
 
-### Q: 如何查看完整命令码列表？
+### Q: How to view the full command code list?
 
-A: 参阅 [README.md](README.md) 中的固件命令覆盖表，或查看 SDK 源码 `lib/src/core/commands.dart`。
+A: See the firmware command coverage table in [README.md](README.md), or view the SDK source at `lib/src/core/commands.dart`.
 
 ---
 
-## 更多资源
+## More Resources
 
-- [README.md](README.md) — SDK 完整 API 参考与命令覆盖表
-- [CHANGELOG.md](CHANGELOG.md) — 版本变更记录
-- [example/](example/) — 完整示例 Flutter 应用
-- [GitHub Issues](https://github.com/FretSpark/fretspark_sdk/issues) — 问题反馈与建议
+- [README.md](README.md) - Full SDK API reference and command coverage table
+- [CHANGELOG.md](CHANGELOG.md) - Version change log
+- [example/](example/) - Complete example Flutter app
+- [GitHub Issues](https://github.com/FretSpark/fretspark_sdk/issues) - Issue feedback and suggestions

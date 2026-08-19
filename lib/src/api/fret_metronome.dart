@@ -1,5 +1,6 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-// FretMetronome 内部需要调用 FretDevice.send 发送节拍器命令。
+// FretMetronome internally needs to call FretDevice.send to send
+// metronome commands.
 
 import '../core/commands.dart';
 import '../models/fret_device.dart';

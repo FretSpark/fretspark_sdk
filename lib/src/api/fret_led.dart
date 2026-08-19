@@ -1,5 +1,5 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-// FretLED 内部需要调用 FretDevice.send 发送灯光命令。
+// FretLED internally needs to call FretDevice.send to send LED commands.
 
 import 'dart:async';
 
@@ -17,8 +17,9 @@ import '../models/fret_note.dart';
 /// High-level LED control API for a connected [FretDevice].
 ///
 /// Each method is safe to call fire-and-forget from UI event handlers.
-/// SDK 内部自动处理序列化、合并、左手镜像,并维护组控状态以在退出组控时
-/// 自动清理。
+/// The SDK internally handles serialization, coalescing, left-handed
+/// mirroring, and tracks group control state so it can automatically
+/// clean up when exiting group control.
 ///
 /// Left-handed mode is persisted to `SharedPreferences` and shared across
 /// all devices through the [FretSpark] singleton.
@@ -480,8 +481,8 @@ class FretLED {
 
   /// Set voice-reactive sensitivity. Range 0–255.
   ///
-  /// Higher values make the LED react to quieter sounds. 快速调用是安全的,
-  /// SDK 只发送最新值。
+  /// Higher values make the LED react to quieter sounds. Rapid calls are
+  /// safe; the SDK only sends the latest value.
   Future<void> setVoiceSensitivity(FretDevice device, int value) async {
     if (value < 0 || value > 255) {
       throw ArgumentError('voice sensitivity must be 0..255, got $value');
@@ -496,7 +497,7 @@ class FretLED {
   /// uses it to drive LED brightness when [MicSource.appMic] is active.
   ///
   /// Call this at ~30–60 Hz while the APP is capturing audio.
-  /// 高频调用是安全的,SDK 会自动优化。
+  /// High-frequency calls are safe; the SDK optimizes automatically.
   Future<void> injectEnergy(FretDevice device, int volume) async {
     if (volume < 0 || volume > 0xFFFF) {
       throw ArgumentError('volume must be 0..65535, got $volume');

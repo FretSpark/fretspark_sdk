@@ -1,5 +1,6 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-// FretAdvanced 需要调用 FretDevice.send 发送裸命令,这是它的设计目的。
+// FretAdvanced needs to call FretDevice.send to send raw commands; that
+// is its design purpose.
 
 import '../core/commands.dart';
 import '../core/send_queue.dart';
@@ -9,21 +10,26 @@ import '../models/fret_device.dart';
 /// that the SDK's high-level API ([FretLED], [FretMetronome],
 /// [FretClassroom], ...) does not wrap.
 ///
-/// **⚠️ 警告**: 这是一个"逃生通道", 不是常规 API。使用本类发送裸命令
-/// 会绕过 SDK 的状态机优化,可能导致:
+/// **⚠️ Warning**: this is an "escape hatch", not a regular API. Sending
+/// raw commands via this class bypasses the SDK's state-machine
+/// optimizations and may cause:
 ///
-/// - 组控状态未清理 → 渲染异常
-/// - 批量传输 (0x1C/0x16/0x1D) 时序错乱 → LED 数据污染
-/// - 高频指令未合并 (coalesce) → BLE 队列溢出 → 丢包
-/// - 与 SDK 内部状态不同步 → 后续高阶 API 行为异常
+/// - Group-control state not cleaned up → rendering anomaly
+/// - Batch transfer (0x1C/0x16/0x1D) timing disorder → LED data corruption
+/// - High-frequency commands not coalesced → BLE queue overflow → packet loss
+/// - Out of sync with SDK internal state → subsequent high-level API
+///   behaves unexpectedly
 ///
-/// **使用前请确认**:
-/// 1. SDK 高阶 API ([FretLED] / [FretMetronome] 等) **确实**没有等价方法。
-/// 2. 已阅读 [FretCommand] 命令码注释,了解参数格式与固件行为。
-/// 3. 调用后需要自行管理后续状态 (如发完 0x1C 必须发 0x1D 收尾)。
+/// **Before using, confirm**:
+/// 1. The SDK's high-level API ([FretLED] / [FretMetronome], etc.) really
+///    does not have an equivalent method.
+/// 2. You have read the [FretCommand] code comments and understand the
+///    parameter format and firmware behavior.
+/// 3. You will manage subsequent state yourself (e.g. after sending 0x1C
+///    you must send 0x1D to finalize).
 ///
-/// 若发现某命令频繁通过本类发送, 请向 SDK 维护者反馈, 以便补充为
-/// 高阶 API。
+/// If you find a command is frequently sent via this class, please report
+/// it to the SDK maintainers so it can be added as a high-level API.
 class FretAdvanced {
   FretAdvanced._();
 
@@ -89,8 +95,10 @@ class FretAdvanced {
   /// the firmware (e.g. high-frequency animation frames where dropped
   /// packets are acceptable).
   ///
-  /// **⚠️】比 [sendRaw] 更危险**: 调用方完全失去对发送顺序的可见性,
-  /// 仅在确信固件能容忍丢包的场景使用 (如动画刷新)。
+  /// **⚠️ More dangerous than [sendRaw]**: the caller completely loses
+  /// visibility into send ordering. Use only in scenarios where you are
+  /// certain the firmware can tolerate packet loss (e.g. animation
+  /// refresh).
   static void sendRawFireAndForget(
     FretDevice device,
     int cmd,

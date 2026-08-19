@@ -107,13 +107,16 @@ class FretDevice {
 
   /// Send a raw firmware command.
   ///
-  /// **⚠️ 内部方法,品牌方不应直接调用。**
+  /// **⚠️ Internal method; brand apps should not call it directly.**
   ///
-  /// 品牌方应使用 [FretLED] / [FretOTA] / [FretMetronome] / [FretClassroom]
-  /// 等高阶 API,不要直接调用 [send] 发裸命令,否则可能破坏 SDK 的
-  /// 状态机(组控 / 批量传输 / coalesce),导致灯光异常或 OTA 失败。
+  /// Brand apps should use the high-level APIs ([FretLED] / [FretOTA] /
+  /// [FretMetronome] / [FretClassroom], etc.) instead of calling [send]
+  /// with raw commands; otherwise the SDK's state machine (group control /
+  /// batch transfer / coalesce) may be broken, causing LED anomalies or
+  /// OTA failures.
   ///
-  /// 此方法仅供 SDK 内部使用,以及单元测试时绕过高阶 API 注入命令。
+  /// This method is for SDK internal use only, and for unit tests to
+  /// inject commands while bypassing the high-level API.
   @visibleForTesting
   Future<void> send(int cmd, List<int> params) async {
     if (_disposed) {
@@ -212,7 +215,8 @@ class FretDevice {
   /// Called by [FretConnection] once the parallel handshake queries
   /// resolve.
   ///
-  /// **⚠️ 内部方法,品牌方不应直接调用。** 仅供 SDK 内部和单元测试使用。
+  /// **⚠️ Internal method; brand apps should not call it directly.** For
+  /// SDK internal use and unit tests only.
   @visibleForTesting
   void attachQueriedInfo({
     required String firmwareVersion,

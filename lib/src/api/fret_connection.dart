@@ -1,5 +1,6 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-// FretConnection 内部需要调用 FretDevice.forBle / attachQueriedInfo / send。
+// FretConnection internally needs to call FretDevice.forBle /
+// attachQueriedInfo / send.
 
 import 'dart:async';
 
