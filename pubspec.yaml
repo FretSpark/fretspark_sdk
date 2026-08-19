@@ -1,0 +1,48 @@
+name: fretspark_sdk
+description: "Official Flutter SDK for FretSpark smart guitar fretboard firmware. Connect, control LEDs, and upgrade firmware across all FretSpark-compatible brands (FretSpark, AUPHY, Smiger, NATASHA, Bullfighter, Deviser, etc.)."
+version: 1.4.0
+homepage: https://github.com/fretspark/fretspark_sdk
+repository: https://github.com/fretspark/fretspark_sdk
+issue_tracker: https://github.com/fretspark/fretspark_sdk/issues
+documentation: https://github.com/fretspark/fretspark_sdk#readme
+
+topics:
+  - bluetooth
+  - ble
+  - music
+  - guitar
+  - led
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_blue_plus: ^1.13.1
+  shared_preferences: ^2.2.1
+  permission_handler: ^11.3.1
+  http: ^1.2.0
+  path_provider: ^2.1.0
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+# The SDK is a Flutter plugin package (not a pure Dart package) because it
+# depends on flutter_blue_plus which requires platform channels for BLE.
+# Brand apps include it via:
+#   dependencies:
+#     fretspark_sdk:
+#       git:
+#         url: https://github.com/fretspark/fretspark_sdk.git
+#         ref: v1.0.0
+# OR after publishing to pub.dev:
+#   fretspark_sdk: ^1.0.0
+
+flutter:
+  assets:
+    - assets/brands_fallback.json

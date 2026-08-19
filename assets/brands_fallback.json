@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "list": [
+    {
+      "id": "fretspark",
+      "display_name": "FretSpark",
+      "device_model": "FS-86 PRO",
+      "email": "support@fretspark.com",
+      "ota_name_prefix": "FS-86 OTA",
+      "firmware_patterns": [
+        "^FS[-_ ]?86PRO[-_][A-Z0-9]{4}$",
+        "^FS[-_ ]?86OTA$"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "auphy",
+      "display_name": "AUPHY GT",
+      "device_model": "SCT-86 PRO",
+      "email": "support@auphygt.com",
+      "ota_name_prefix": "SCT-86PRO OTA",
+      "firmware_patterns": [
+        "^SCT[-_ ]?86PRO[-_][A-Z0-9]{4}$",
+        "^SCT[-_ ]?86PRO[-_ ]?OTA$",
+        "^SCT[-_ ]?86OTA$",
+        "^SCT[-_ ]?86DIY[-_][A-Z0-9]{4}$",
+        "^SCT[-_ ]?86DIY[-_ ]?OTA$"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "smiger",
+      "display_name": "Smiger",
+      "device_model": "Smiger",
+      "email": "support@smiger.com",
+      "ota_name_prefix": "Smiger OTA",
+      "firmware_patterns": [
+        "^Smiger[-_][A-Z0-9]{4}$",
+        "^Smiger[-_ ]?OTA$"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "natasha",
+      "display_name": "NATASHA",
+      "device_model": "NATASHA",
+      "email": "support@natasha.com",
+      "ota_name_prefix": "NATASHA-X OTA",
+      "firmware_patterns": [
+        "^NATASHA-X-[A-Z0-9]{4}$",
+        "^NATASHA-X[ -_]?OTA$"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "bullfighter",
+      "display_name": "Bullfighter",
+      "device_model": "DNS-L01",
+      "email": "support@bullfighter.com",
+      "ota_name_prefix": "DNS-L01 OTA",
+      "firmware_patterns": [
+        "^DNS-L01-[A-Z0-9]{4}$",
+        "^DNS-L01[ -_]?OTA$"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "deviser",
+      "display_name": "Deviser",
+      "device_model": "Deviser",
+      "email": "support@deviser.com",
+      "ota_name_prefix": "Deviser OTA",
+      "firmware_patterns": [
+        "^Deviser-[A-Z0-9]{4}$",
+        "^Deviser[ -_]?OTA$"
+      ],
+      "enabled": true
+    }
+  ]
+}
