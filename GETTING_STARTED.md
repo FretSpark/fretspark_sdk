@@ -7,6 +7,9 @@ This guide helps third-party developers quickly integrate the FretSpark SDK to e
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Platform Configuration](#platform-configuration)
+  - [Android](#android)
+  - [iOS](#ios)
+  - [Web (Chrome / Edge / Opera)](#web-chrome--edge--opera)
 - [Quick Start](#quick-start)
 - [Core API Overview](#core-api-overview)
 - [Device Connection](#device-connection)
@@ -90,6 +93,84 @@ Add the Bluetooth usage descriptions in `ios/Runner/Info.plist`:
 <key>NSBluetoothPeripheralUsageDescription</key>
 <string>Bluetooth permission is required to connect and control the guitar fretboard device</string>
 ```
+
+### Web (Chrome / Edge / Opera)
+
+The SDK supports Flutter Web via the **Web Bluetooth API**. This requires a
+custom transport implementation because `flutter_blue_plus` does not support
+Web. The SDK ships an example adapter at
+`example/lib/web_bluetooth_transport.dart`.
+
+**Browser support:** Chrome (macOS/Windows/Linux/Android), Edge, Opera.
+**Not supported:** Firefox, Safari (as of 2026).
+
+#### 1. Add the `web` package to your app
+
+```yaml
+# your_app/pubspec.yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  fretspark_sdk:
+    git:
+      url: https://github.com/FretSpark/fretspark_sdk.git
+      ref: main
+  web: ^1.1.0  # Web Bluetooth interop
+```
+
+#### 2. Copy the transport adapter
+
+Copy `example/lib/web_bluetooth_transport.dart` into your app and use
+conditional imports to load it only on Web:
+
+```dart
+// lib/transport.dart
+export 'default_transport.dart'
+    if (dart.library.js_interop) 'web_bluetooth_transport.dart';
+```
+
+#### 3. Inject the Web Bluetooth transport
+
+```dart
+import 'package:fretspark_sdk/fretspark_sdk.dart';
+import 'web_bluetooth_transport.dart';  // your copy
+
+await FretSpark.instance.initialize(
+  brandId: 'auphy',
+  transport: WebBluetoothTransport(),
+);
+```
+
+#### 4. Trigger the device picker (user gesture required)
+
+Web Bluetooth does not support background scanning. The browser shows a
+device-picker dialog when you call `startScan()`. This **must** be triggered
+by a user gesture (e.g. a button tap):
+
+```dart
+ElevatedButton(
+  onPressed: () async {
+    await FretSpark.instance.connection.startScan();
+  },
+  child: const Text('Select Device'),
+)
+```
+
+#### Web Bluetooth limitations
+
+| Feature | Mobile (Android/iOS) | Web |
+|---|---|---|
+| Background scanning | Yes | No — user picks device |
+| RSSI | Yes | No — always 0 |
+| MTU negotiation | Yes (up to 247) | No — fixed at 23 |
+| OTA firmware upgrade | Yes | Requires custom `FretOtaTransport` |
+| User gesture required | No | Yes — for device selection |
+| HTTPS required | No | Yes (or localhost) |
+
+> **Note:** The SDK's packet codec already splits payloads into ≤20-byte
+> frames, so the fixed MTU of 23 on Web does not cause issues for the
+> runtime command service. OTA upgrade on Web requires implementing a
+> custom `FretOtaTransport` (the default uses `flutter_blue_plus`).
 
 ---
 
