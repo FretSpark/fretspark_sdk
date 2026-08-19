@@ -5,7 +5,7 @@
       "id": "fretspark",
       "display_name": "FretSpark",
       "device_model": "FS-86 PRO",
-      "email": "support@fretspark.com",
+      "email": "auphy@auphymusic.com",
       "ota_name_prefix": "FS-86 OTA",
       "firmware_patterns": [
         "^FS[-_ ]?86PRO[-_][A-Z0-9]{4}$",

@@ -34,7 +34,7 @@ class BrandConfig {
     required this.id,
     required this.displayName,
     required this.deviceModel,
-    this.email = 'support@fretspark.com',
+    this.email = 'auphy@auphymusic.com',
     required this.firmwarePatterns,
     this.otaNamePrefix,
     this.enabled = true,
@@ -45,7 +45,7 @@ class BrandConfig {
         displayName: json['display_name'] as String,
         deviceModel:
             (json['device_model'] as String?) ?? json['product_model'] as String? ?? '',
-        email: (json['email'] as String?) ?? 'support@fretspark.com',
+        email: (json['email'] as String?) ?? 'auphy@auphymusic.com',
         firmwarePatterns:
             (json['firmware_patterns'] as List).map((e) => e as String).toList(),
         otaNamePrefix: json['ota_name_prefix'] as String?,

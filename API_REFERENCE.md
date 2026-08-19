@@ -988,7 +988,7 @@ Brand apps must call `FretSpark.initialize(brandId: ...)` with one of the IDs re
 | `id` | `String` | Brand unique identifier (lowercase English, e.g. `fretspark`, `smiger`). |
 | `displayName` | `String` | Display name shown in the brand app's UI. |
 | `deviceModel` | `String` | Device model label (e.g. `FS-86 PRO`, `SCT-86 PRO`). |
-| `email` | `String` | Customer support email. Defaults to `support@fretspark.com`. |
+| `email` | `String` | Customer support email. Defaults to `auphy@auphymusic.com`. |
 | `firmwarePatterns` | `List<String>` | Regex patterns that match this brand's firmware BLE advertising names. Patterns are case-insensitive. The first matching brand in the list wins. |
 | `otaNamePrefix` | `String?` | Prefix used by the firmware when advertising in OTA mode (e.g. `SCT-86PRO OTA`). Used by `FretOTA.scanOtaDevice`. |
 | `enabled` | `bool` | Whether this brand is currently enabled in the cloud config. Defaults to `true`. |
@@ -997,7 +997,7 @@ Brand apps must call `FretSpark.initialize(brandId: ...)` with one of the IDs re
 
 | Method | Signature | Description |
 |---|---|---|
-| `BrandConfig` (constructor) | `const BrandConfig({required String id, required String displayName, required String deviceModel, String email = 'support@fretspark.com', required List<String> firmwarePatterns, String? otaNamePrefix, bool enabled = true})` | Construct a brand config. |
+| `BrandConfig` (constructor) | `const BrandConfig({required String id, required String displayName, required String deviceModel, String email = 'auphy@auphymusic.com', required List<String> firmwarePatterns, String? otaNamePrefix, bool enabled = true})` | Construct a brand config. |
 | `fromJson` | `factory BrandConfig.fromJson(Map<String, dynamic> json)` | Construct from JSON. Accepts both `device_model` and `product_model` keys for the device model. |
 | `toJson` | `Map<String, dynamic> toJson()` | Serialize to JSON. |
 | `matches` | `bool matches(String firmwareName)` | Test whether `firmwareName` matches any of `firmwarePatterns`. Case-insensitive. Returns `false` for an empty name. |

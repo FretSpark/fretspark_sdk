@@ -326,7 +326,7 @@ To add a new brand:
 4. **OTA**: ensure your firmware advertises the OTA-mode name (`ota_name_prefix`) when rebooted into OTA mode.
 
 For closed-source brand apps, obtain a commercial license from
-support@fretspark.com before publishing.
+auphy@auphymusic.com before publishing.
 
 ## Example
 

@@ -355,7 +355,7 @@ void main() {
         'device_model': 'B1',
         'firmware_patterns': <String>['.*Brand1.*'],
       });
-      expect(config.email, 'support@fretspark.com');
+      expect(config.email, 'auphy@auphymusic.com');
       expect(config.enabled, isTrue);
     });
 
