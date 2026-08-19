@@ -31,6 +31,8 @@ dependencies:
 ## Quick start
 
 ```dart
+import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:fretspark_sdk/fretspark_sdk.dart';
 
 Future<void> main() async {
@@ -40,14 +42,24 @@ Future<void> main() async {
   final ok = await FretSpark.instance.connection.requestPermissions();
   if (!ok) return;
 
-  FretSpark.instance.connection.scanResults.listen((r) async {
+  // Store the subscription so it can be cancelled (prevents memory leaks).
+  final sub = FretSpark.instance.connection.scanResults.listen((r) async {
     if (r.name.startsWith('SCT-86PRO')) {
       await FretSpark.instance.connection.stopScan();
-      final device = await FretSpark.instance.connection.connect(r.id);
-      await FretSpark.instance.led.fillColor(device, FretColor.red);
+      try {
+        final device = await FretSpark.instance.connection.connect(r.id);
+        await FretSpark.instance.led.fillColor(device, FretColor.red);
+      } on FretSparkException catch (e) {
+        // Handle BLE connection / device-disconnected errors.
+        debugPrint('Connect failed: $e');
+      }
     }
   });
+
   await FretSpark.instance.connection.startScan();
+
+  // Cancel the subscription when done (e.g. in State.dispose()).
+  // await sub.cancel();
 }
 ```
 
@@ -199,6 +211,9 @@ await FretSpark.instance.initialize(
   brandId: 'auphy',
   manifestUrl: 'https://your-ota.com/ota_firmware/manifest.json',
 );
+
+// Firmware OTA files are provided exclusively by FretSpark.
+// Contact auphy@auphymusic.com to obtain the real OTA manifest URL.
 
 // After connecting a device:
 final device = await FretSpark.instance.connection.connect(deviceId);

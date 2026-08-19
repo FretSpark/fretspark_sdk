@@ -63,6 +63,10 @@ class FlutterBlueTransport extends FretTransport {
   Future<bool> get isAdapterOn async => FlutterBluePlus.isOn;
 
   @override
+  Stream<bool> get adapterStateChanges => FlutterBluePlus.adapterState
+      .map((state) => state == BluetoothAdapterState.on);
+
+  @override
   Future<void> startScan({
     Duration timeout = const Duration(seconds: 10),
     String? serviceUuid,
@@ -201,6 +205,7 @@ class FlutterBlueTransport extends FretTransport {
   @override
   Stream<FretConnectionState> get connectionStates => _connectionController.stream;
 
+  @override
   void dispose() {
     _scanSub?.cancel();
     _scanController.close();

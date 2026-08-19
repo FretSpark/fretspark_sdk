@@ -4,12 +4,13 @@
 //   - startTeacher: encodes 0x23 with empty payload
 //   - startStudent: encodes 0x24 with empty payload
 //   - stop: encodes 0x25 with empty payload
-//   - disposed device throws StateError
+//   - disposed device throws FretSparkException
 //   - full session cycle: teacher → stop → student → stop
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fretspark_sdk/src/api/fret_classroom.dart';
 import 'package:fretspark_sdk/src/core/commands.dart';
+import 'package:fretspark_sdk/src/core/fret_spark_exception.dart';
 import 'package:fretspark_sdk/src/models/fret_device.dart';
 
 import 'helpers/fake_ble_device.dart';
@@ -88,27 +89,27 @@ void main() {
       ]);
     });
 
-    test('startTeacher on disposed device throws StateError', () async {
+    test('startTeacher on disposed device throws FretSparkException', () async {
       await device.dispose();
       expect(
         () => classroom.startTeacher(device),
-        throwsA(isA<StateError>()),
+        throwsA(isA<FretSparkException>()),
       );
     });
 
-    test('startStudent on disposed device throws StateError', () async {
+    test('startStudent on disposed device throws FretSparkException', () async {
       await device.dispose();
       expect(
         () => classroom.startStudent(device),
-        throwsA(isA<StateError>()),
+        throwsA(isA<FretSparkException>()),
       );
     });
 
-    test('stop on disposed device throws StateError', () async {
+    test('stop on disposed device throws FretSparkException', () async {
       await device.dispose();
       expect(
         () => classroom.stop(device),
-        throwsA(isA<StateError>()),
+        throwsA(isA<FretSparkException>()),
       );
     });
   });

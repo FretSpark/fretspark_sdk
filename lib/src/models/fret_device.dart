@@ -54,6 +54,7 @@ class FretDevice {
   int _batteryLevel = 0;
   int _batteryVoltageMv = 0;
   bool _disposed = false;
+  bool _rtcSynced = false;
 
   /// Firmware version string (e.g. `1.2.3.4`). Empty until the query
   /// completes or times out.
@@ -78,6 +79,13 @@ class FretDevice {
 
   /// Latest battery voltage in mV. Stale until the first notify.
   int get batteryVoltageMv => _batteryVoltageMv;
+
+  /// Whether the device RTC has been synchronized via [setRtcTime].
+  ///
+  /// Required before [FretLED.setTimer]; the firmware uses its RTC as the
+  /// reference for scheduled power on/off. Until [setRtcTime] succeeds,
+  /// this is `false` and [FretLED.setTimer] will reject.
+  bool get isRtcSynced => _rtcSynced;
 
   /// BLE device id.
   String get id => _ble.id;
@@ -162,6 +170,7 @@ class FretDevice {
       time.minute,
       time.second,
     ]);
+    _rtcSynced = true;
   }
 
   /// Re-query the firmware version at runtime.

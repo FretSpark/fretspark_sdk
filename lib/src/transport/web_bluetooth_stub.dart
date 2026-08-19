@@ -26,6 +26,9 @@ class WebBluetoothTransport extends FretTransport {
   Future<bool> get isAdapterOn async => throw _unsupported;
 
   @override
+  Stream<bool> get adapterStateChanges => const Stream<bool>.empty();
+
+  @override
   Future<void> startScan({
     Duration timeout = const Duration(seconds: 10),
     String? serviceUuid,
@@ -45,6 +48,9 @@ class WebBluetoothTransport extends FretTransport {
 
   @override
   Stream<FretConnectionState> get connectionStates => throw _unsupported;
+
+  @override
+  void dispose() {}
 
   static final UnsupportedError _unsupported = UnsupportedError(
     'WebBluetoothTransport is only available on the Web platform.',

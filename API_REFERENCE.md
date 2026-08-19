@@ -88,13 +88,19 @@ import 'package:fretspark_sdk/fretspark_sdk.dart';
 
 await FretSpark.instance.initialize(
   brandId: 'auphy',
-  manifestUrl: 'https://ota.auphygt.com/manifest.json',
-  brandConfigUrl: 'https://ota.auphygt.com/brands.json',
+  manifestUrl: 'https://your-ota-server.example.com/manifest.json',
+  brandConfigUrl: 'https://your-ota-server.example.com/brands.json',
 );
 
 print(FretSpark.instance.isInitialized); // true
 print(FretSpark.instance.brand.activeBrand?.displayName); // 'AUPHY GT'
 ```
+
+> **Note:** Replace the placeholder URLs with the real OTA manifest and brand
+> config URLs provided by FretSpark. Contact `auphy@auphymusic.com` to obtain
+> the OTA server endpoints for your brand. Firmware OTA files are provided
+> exclusively by FretSpark — developers and instrument manufacturers do not
+> host their own OTA files.
 
 ---
 
@@ -284,9 +290,49 @@ Left-handed mode is persisted to `SharedPreferences` and shared across all devic
 
 | Method | Parameters | Returns | Description |
 |---|---|---|---|
-| `setMode` | `device: FretDevice`, `modeId: int` | `Future<void>` | Switch to a built-in effect mode. `modeId` is 1-based. Maps to 0x06. Payload: `[modeH, modeL]`. Clears selection first. |
+| `setMode` | `device: FretDevice`, `modeId: int` | `Future<void>` | Switch to a built-in effect mode. `modeId` is 1-based, range 1..117 (throws `FretSparkException.validationError` otherwise). Maps to 0x06. Payload: `[modeH, modeL]`. Clears selection first. See the table below for common mode IDs. |
 | `setSpeed` | `device: FretDevice`, `speed: int` | `Future<void>` | Set effect speed. Range 0-255. Throws `ArgumentError` otherwise. Maps to 0x08. |
 | `setDirection` | `device: FretDevice`, `direction: int` | `Future<void>` | Set effect direction. 0 = forward, 1 = reverse. Throws `ArgumentError` otherwise. Maps to 0x07. |
+
+#### Common modeId Values
+
+The firmware ships with 117 built-in effect modes (`modeId` 1..117). The table below lists the first 30 common mode IDs plus a summary of the remaining range. Mode 2 (Rainbow) is confirmed by the SDK's `setAllOn()` helper, which calls `setMode(device, 2)` and is documented as the "rainbow effect". Other names are typical LED effect labels used by WS2812/SK6812-compatible firmware; brand apps should consult the firmware release notes for the authoritative per-brand list.
+
+| `modeId` | Name | Category |
+|---|---|---|
+| 1 | Static Red | Static color |
+| 2 | Rainbow *(confirmed by `setAllOn()`)* | Color cycle |
+| 3 | Static Blue | Static color |
+| 4 | Static White | Static color |
+| 5 | Static Green | Static color |
+| 6 | Color Chase | Chase |
+| 7 | Color Wipe | Wipe |
+| 8 | Breathing Red | Breathing |
+| 9 | Breathing Green | Breathing |
+| 10 | Breathing Blue | Breathing |
+| 11 | Breathing White | Breathing |
+| 12 | Breathing Magenta | Breathing |
+| 13 | Breathing Cyan | Breathing |
+| 14 | Breathing Yellow | Breathing |
+| 15 | Fade Red | Fade |
+| 16 | Fade Green | Fade |
+| 17 | Fade Blue | Fade |
+| 18 | Fade White | Fade |
+| 19 | Fade Multi | Fade |
+| 20 | Fade Rainbow | Fade |
+| 21 | Chase Red | Chase |
+| 22 | Chase Green | Chase |
+| 23 | Chase Blue | Chase |
+| 24 | Chase White | Chase |
+| 25 | Scan Red | Scan |
+| 26 | Scan Green | Scan |
+| 27 | Scan Blue | Scan |
+| 28 | Scan White | Scan |
+| 29 | Scan Dual Color | Scan |
+| 30 | Scan Rainbow | Scan |
+| 31–117 | Additional firmware patterns | Various |
+
+> **Note:** Modes 31–117 are additional firmware-defined patterns (variations of breathing, fade, chase, scan, rainbow, and seasonal effects). The full list per brand is available in the firmware release notes. Pass any `modeId` in 1..117 to `setMode`; out-of-range values throw `FretSparkException.validationError`. The brand app can curate a subset as the user's "DIY" mode list via `setDiyModeList`.
 
 ### Methods — Hardware Layout
 
@@ -729,7 +775,7 @@ final sub = fw.onStatusChanged.listen((status) {
 });
 
 final path = await fw.checkAndDownload(
-  manifestUrl: 'https://ota.auphygt.com/manifest.json',
+  manifestUrl: 'https://your-ota-server.example.com/manifest.json',
   brandId: 'auphy',
   currentVersion: device.firmwareVersion,
   onProgress: (p) => print('Download: ${(p * 100).round()}%'),
@@ -806,7 +852,7 @@ print('Matched: ${match?.displayName}'); // 'AUPHY GT'
 
 // Sync from cloud.
 final applied = await brand.syncFromCloudUrl(
-  'https://ota.auphygt.com/brands.json',
+  'https://your-ota-server.example.com/brands.json',
 );
 print('Cloud applied: $applied');
 ```
@@ -1405,8 +1451,8 @@ Future<void> main() async {
   // 1. Initialize the SDK for the AUPHY brand.
   await FretSpark.instance.initialize(
     brandId: 'auphy',
-    manifestUrl: 'https://ota.auphygt.com/manifest.json',
-    brandConfigUrl: 'https://ota.auphygt.com/brands.json',
+    manifestUrl: 'https://your-ota-server.example.com/manifest.json',
+    brandConfigUrl: 'https://your-ota-server.example.com/brands.json',
   );
 
   final connection = FretSpark.instance.connection;

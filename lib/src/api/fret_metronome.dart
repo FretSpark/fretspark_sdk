@@ -3,6 +3,7 @@
 // metronome commands.
 
 import '../core/commands.dart';
+import '../core/fret_spark_exception.dart';
 import '../models/fret_device.dart';
 
 /// Time signatures accepted by the firmware metronome.
@@ -33,6 +34,9 @@ class FretMetronome {
     required int bpm,
     FretTimeSignature timeSignature = FretTimeSignature.fourFour,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (bpm < 40 || bpm > 240) {
       throw ArgumentError('bpm must be 40..240, got $bpm');
     }
@@ -45,6 +49,9 @@ class FretMetronome {
 
   /// Stop the metronome on [device].
   Future<void> stop(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.metronomeStop, <int>[]);
   }
 }

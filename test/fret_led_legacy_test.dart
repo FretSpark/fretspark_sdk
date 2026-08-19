@@ -21,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fretspark_sdk/src/api/fret_led.dart';
 import 'package:fretspark_sdk/src/core/commands.dart';
+import 'package:fretspark_sdk/src/core/fret_spark_exception.dart';
 import 'package:fretspark_sdk/src/models/fret_color.dart';
 import 'package:fretspark_sdk/src/models/fret_device.dart';
 import 'package:fretspark_sdk/src/models/fret_note.dart';
@@ -101,11 +102,11 @@ void main() {
     });
 
     test('rejects 1001', () async {
-      expect(() => led.setBrightness(device, 1001), throwsA(isA<ArgumentError>()));
+      expect(() => led.setBrightness(device, 1001), throwsA(isA<FretSparkException>()));
     });
 
     test('rejects negative', () async {
-      expect(() => led.setBrightness(device, -1), throwsA(isA<ArgumentError>()));
+      expect(() => led.setBrightness(device, -1), throwsA(isA<FretSparkException>()));
     });
   });
 
@@ -178,9 +179,14 @@ void main() {
       expect(m.params, <int>[0, 5]);
     });
 
-    test('modeId=128 (AI rhythm range) sends [0, 128]', () async {
-      await led.setMode(device, 128);
-      expect(lastFrameOf(ble).params, <int>[0, 128]);
+    test('modeId=128 (AI rhythm range) rejected (out of 1..117)', () async {
+      // P1-5 boundary validation: built-in modes are 1..117. Values
+      // outside that range (including the AI rhythm range 124-135) now
+      // throw FretSparkException instead of being sent raw.
+      expect(
+        () => led.setMode(device, 128),
+        throwsA(isA<FretSparkException>()),
+      );
     });
 
     test('clears selection before mode change', () async {
@@ -661,12 +667,12 @@ void main() {
 
     test('rejects modeId=0 (must be 1..117)', () async {
       expect(() => led.setDiyModeList(device, <int>[0]),
-          throwsA(isA<ArgumentError>()));
+          throwsA(isA<FretSparkException>()));
     });
 
     test('rejects modeId=118 (out of built-in range)', () async {
       expect(() => led.setDiyModeList(device, <int>[118]),
-          throwsA(isA<ArgumentError>()));
+          throwsA(isA<FretSparkException>()));
     });
 
     test('queryDiyModeList sends empty payload', () async {

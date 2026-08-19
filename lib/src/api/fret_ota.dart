@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../core/commands.dart';
+import '../core/fret_spark_exception.dart';
 import '../models/fret_device.dart';
 import '../transport/fret_ota_transport.dart';
 import '../transport/fret_transport.dart';
@@ -73,6 +74,14 @@ class FretOTA {
   /// completes.
   Stream<FretOtaProgress> get onProgress => _progressController.stream;
 
+  final StreamController<FretSparkException> _errorController =
+      StreamController<FretSparkException>.broadcast();
+
+  /// Emits [FretSparkException] events when an OTA upgrade fails. Brand
+  /// apps can subscribe to surface errors independently of the thrown
+  /// exception (e.g. to update UI state on a different isolate).
+  Stream<FretSparkException> get onOtaError => _errorController.stream;
+
   /// Tell a connected runtime device to reboot into OTA mode.
   ///
   /// Notifies the device to enter OTA mode via the runtime command
@@ -99,6 +108,9 @@ class FretOTA {
     FretDevice device, {
     Duration rebootDelay = const Duration(seconds: 2),
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.enterOta, <int>[0x02, 0x01]);
     if (rebootDelay > Duration.zero) {
       await Future<void>.delayed(rebootDelay);
@@ -143,34 +155,46 @@ class FretOTA {
   /// (i.e. its advertised name must use the OTA prefix).
   ///
   /// Throws [FretOtaException] on any failure. Progress is emitted via
-  /// [onProgress].
+  /// [onProgress], and errors are also emitted on [onOtaError] (as
+  /// [FretSparkException]) immediately before the throw propagates.
   Future<void> upgrade(String deviceId, Uint8List fileBytes) async {
-    if (fileBytes.isEmpty) {
-      throw const FretOtaException('firmware image is empty');
-    }
-    _emit(phase: FretOtaPhase.connecting, sent: 0, total: fileBytes.length);
-
-    await _otaTransport.connect(
-      deviceId,
-      timeout: const Duration(seconds: 20),
-    );
     try {
-      await _otaTransport.discoverOtaService(
-        timeout: const Duration(seconds: 15),
-      );
-      await _otaTransport.setRspNotifyValue(
-        true,
-        timeout: const Duration(seconds: 5),
-      );
+      if (fileBytes.isEmpty) {
+        throw const FretOtaException('firmware image is empty');
+      }
+      _emit(phase: FretOtaPhase.connecting, sent: 0, total: fileBytes.length);
 
-      await _runOtaProtocol(fileBytes: fileBytes);
-      _emit(
-        phase: FretOtaPhase.success,
-        sent: fileBytes.length,
-        total: fileBytes.length,
+      await _otaTransport.connect(
+        deviceId,
+        timeout: const Duration(seconds: 20),
       );
-    } finally {
-      await _otaTransport.disconnect(timeout: const Duration(seconds: 3));
+      try {
+        await _otaTransport.discoverOtaService(
+          timeout: const Duration(seconds: 15),
+        );
+        await _otaTransport.setRspNotifyValue(
+          true,
+          timeout: const Duration(seconds: 5),
+        );
+
+        await _runOtaProtocol(fileBytes: fileBytes);
+        _emit(
+          phase: FretOtaPhase.success,
+          sent: fileBytes.length,
+          total: fileBytes.length,
+        );
+      } finally {
+        await _otaTransport.disconnect(timeout: const Duration(seconds: 3));
+      }
+    } on FretOtaException catch (e) {
+      // Emit the error on the stream before rethrowing so brand apps
+      // that subscribe to [onOtaError] are notified of every failure
+      // (empty image, connect/discover failure, protocol rejection,
+      // retry exhaustion) even if they do not catch the exception.
+      if (!_errorController.isClosed) {
+        _errorController.add(FretSparkException.otaError(e.message));
+      }
+      rethrow;
     }
   }
 
@@ -326,6 +350,7 @@ class FretOTA {
   /// Release resources. After disposal, [upgrade] will throw.
   void dispose() {
     _progressController.close();
+    _errorController.close();
   }
 }
 

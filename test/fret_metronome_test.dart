@@ -5,11 +5,12 @@
 //   - bpm boundary validation (40 / 240 accepted; <40 / >240 rejected)
 //   - all 4 time signatures encode correct beat count
 //   - stop(device): encodes 0x21 with empty payload
-//   - disposed device throws StateError
+//   - disposed device throws FretSparkException
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fretspark_sdk/src/api/fret_metronome.dart';
 import 'package:fretspark_sdk/src/core/commands.dart';
+import 'package:fretspark_sdk/src/core/fret_spark_exception.dart';
 import 'package:fretspark_sdk/src/models/fret_device.dart';
 
 import 'helpers/fake_ble_device.dart';
@@ -116,11 +117,11 @@ void main() {
         );
       });
 
-      test('disposed device throws StateError', () async {
+      test('disposed device throws FretSparkException', () async {
         await device.dispose();
         expect(
           () => metronome.start(device, bpm: 120),
-          throwsA(isA<StateError>()),
+          throwsA(isA<FretSparkException>()),
         );
       });
     });
@@ -134,11 +135,11 @@ void main() {
         expect(params, isEmpty);
       });
 
-      test('disposed device throws StateError', () async {
+      test('disposed device throws FretSparkException', () async {
         await device.dispose();
         expect(
           () => metronome.stop(device),
-          throwsA(isA<StateError>()),
+          throwsA(isA<FretSparkException>()),
         );
       });
     });

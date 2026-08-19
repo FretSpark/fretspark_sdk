@@ -3,6 +3,7 @@
 // classroom-mode commands.
 
 import '../core/commands.dart';
+import '../core/fret_spark_exception.dart';
 import '../models/fret_device.dart';
 
 /// Classroom / local-teaching mode API.
@@ -34,6 +35,9 @@ class FretClassroom {
   /// call [startStudent]. The brand APP is responsible for enforcing
   /// this invariant.
   Future<void> startTeacher(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.teacherTxStart, <int>[]);
   }
 
@@ -44,6 +48,9 @@ class FretClassroom {
   /// on the same classroom ID. Local LED commands sent to this device
   /// are ignored until [stop] is called.
   Future<void> startStudent(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.studentRxStart, <int>[]);
   }
 
@@ -53,6 +60,9 @@ class FretClassroom {
   /// firmware returns to normal BLE-driven rendering and the device
   /// stops broadcasting / listening on the classroom channel.
   Future<void> stop(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.classroomStop, <int>[]);
   }
 }

@@ -22,6 +22,12 @@ library;
 // === Singleton entry point ===
 export 'src/fretspark.dart';
 
+// === Unified exception type ===
+export 'src/core/fret_spark_exception.dart';
+
+// === Permission result ===
+export 'src/core/fret_permission_result.dart';
+
 // === Public API classes ===
 export 'src/api/fret_advanced.dart';
 export 'src/api/fret_brand.dart';

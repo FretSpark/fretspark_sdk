@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,6 +10,8 @@ import 'api/fret_firmware.dart';
 import 'api/fret_led.dart';
 import 'api/fret_metronome.dart';
 import 'api/fret_ota.dart';
+import 'core/fret_spark_exception.dart';
+import 'models/brand_config.dart';
 import 'transport/flutter_blue_transport.dart';
 import 'transport/fret_transport.dart';
 
@@ -49,6 +53,10 @@ class FretSpark {
   late final FretMetronome _metronome;
   late final FretClassroom _classroom;
   late final FretFirmwareDownloader _firmware;
+
+  /// Subscription to [FretConnection.onBrandAutoDetected], held so it
+  /// can be cancelled in [dispose].
+  StreamSubscription<BrandConfig>? _brandSub;
 
   /// Optional default manifest URL for [FretFirmwareDownloader]. Set
   /// via [initialize]. When `null`, brand apps must pass `manifestUrl`
@@ -102,7 +110,7 @@ class FretSpark {
       ..setActiveBrand(_brand.activeBrand)
       ..setBrandMatcher((name) => _brand.matchByFirmwareName(name));
     // Persist auto-detected brand changes.
-    _connection.onBrandAutoDetected.listen((brand) {
+    _brandSub = _connection.onBrandAutoDetected.listen((brand) {
       _brand.setActive(brand.id);
     });
     _led = FretLED(_prefs);
@@ -115,13 +123,28 @@ class FretSpark {
     _initialized = true;
   }
 
-  /// Reset the singleton to its pre-initialize state. Mostly useful in
-  /// tests.
-  @visibleForTesting
+  /// Release all resources held by the SDK: the active BLE connection,
+  /// the brand-auto-detected subscription, and every sub-API's stream
+  /// controllers / send queues. After this returns, [isInitialized] is
+  /// `false` and [initialize] must be called again before any sub-API
+  /// getter can be used.
+  ///
+  /// Safe to call multiple times (subsequent calls are no-ops).
   Future<void> dispose() async {
     if (!_initialized) return;
+    // Cancel the brand subscription first so no events fire during teardown.
+    await _brandSub?.cancel();
+    _brandSub = null;
+    // Disconnect the active device (releases FretDevice's notify sub /
+    // send queue / ble connection).
     await _connection.disconnect();
+    // Close the connection's brand-detected stream controller.
+    _connection.dispose();
+    // Close the OTA progress + firmware status stream controllers.
     _ota.dispose();
+    _firmware.dispose();
+    // Close the transport's scan / connection-state controllers.
+    _transport.dispose();
     _initialized = false;
   }
 
@@ -188,9 +211,7 @@ class FretSpark {
 
   void _checkInit() {
     if (!_initialized) {
-      throw StateError(
-        'FretSpark.instance is not initialized. Call FretSpark.instance.initialize(...) first.',
-      );
+      throw FretSparkException.notInitialized();
     }
   }
 }

@@ -85,6 +85,9 @@ class WebBluetoothTransport extends FretTransport {
   @override
   Future<bool> get isAdapterOn async => _isWebBluetoothAvailable;
 
+  @override
+  Stream<bool> get adapterStateChanges => const Stream<bool>.empty();
+
   bool get _isWebBluetoothAvailable {
     try {
       return window.navigator.bluetooth != null;
@@ -225,6 +228,13 @@ class WebBluetoothTransport extends FretTransport {
   @override
   Stream<FretConnectionState> get connectionStates =>
       _connectionController.stream;
+
+  @override
+  void dispose() {
+    _scanController.close();
+    _connectionController.close();
+    _notifyController.close();
+  }
 
   // === Internal: notify callback ===
 

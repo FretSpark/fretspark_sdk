@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:fretspark_sdk/src/core/fret_permission_result.dart';
 import 'package:fretspark_sdk/src/transport/fret_transport.dart';
 
 import 'fake_ble_device.dart';
@@ -33,6 +34,8 @@ class FakeTransport implements FretTransport {
       StreamController<FretScanResult>.broadcast();
   final StreamController<FretConnectionState> _connStateController =
       StreamController<FretConnectionState>.broadcast();
+  final StreamController<bool> _adapterStateController =
+      StreamController<bool>.broadcast();
 
   bool _permissionsGranted = true;
   bool _adapterOn = true;
@@ -41,11 +44,27 @@ class FakeTransport implements FretTransport {
   Future<bool> requestPermissions() async => _permissionsGranted;
 
   @override
+  Future<FretPermissionResult> requestPermissionsDetailed() async {
+    final granted = await requestPermissions();
+    return granted
+        ? FretPermissionResult.granted()
+        : FretPermissionResult.denied();
+  }
+
+  @override
   Future<bool> get isAdapterOn async => _adapterOn;
+
+  @override
+  Stream<bool> get adapterStateChanges => _adapterStateController.stream;
 
   /// Test-setter: whether [requestPermissions] returns true.
   set permissionsGranted(bool v) => _permissionsGranted = v;
   set adapterOn(bool v) => _adapterOn = v;
+
+  /// Inject an adapter on/off state event as if the OS reported it.
+  void emitAdapterStateChange(bool on) {
+    _adapterStateController.add(on);
+  }
 
   @override
   Future<void> startScan({
@@ -101,5 +120,6 @@ class FakeTransport implements FretTransport {
   Future<void> dispose() async {
     await _scanController.close();
     await _connStateController.close();
+    await _adapterStateController.close();
   }
 }

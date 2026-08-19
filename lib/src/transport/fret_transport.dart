@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import '../core/fret_permission_result.dart';
+
 /// Abstraction over the BLE transport layer.
 ///
 /// The SDK ships a default [FlutterBlueTransport] implementation. Brand apps
@@ -14,8 +16,30 @@ abstract class FretTransport {
   /// Android <= 11). Returns `true` if all required permissions are granted.
   Future<bool> requestPermissions();
 
+  /// Request OS-level permissions and return a detailed [FretPermissionResult]
+  /// that distinguishes between the possible outcomes (user-denied,
+  /// permanently-denied, adapter-off, not-supported).
+  ///
+  /// The default implementation delegates to [requestPermissions]: granted
+  /// when it returns `true`, otherwise [FretPermissionDeniedReason.userDenied].
+  /// Transports that can distinguish outcomes (e.g. the native permission
+  /// handler) override this to return a more specific reason.
+  Future<FretPermissionResult> requestPermissionsDetailed() async {
+    final granted = await requestPermissions();
+    return granted
+        ? FretPermissionResult.granted()
+        : FretPermissionResult.denied();
+  }
+
   /// Returns `true` if the device's Bluetooth adapter is on and ready.
   Future<bool> get isAdapterOn;
+
+  /// Stream of Bluetooth adapter on/off state changes.
+  ///
+  /// Emits `true` when the adapter turns on, `false` when it turns off.
+  /// The default implementation returns an empty stream for transports
+  /// that do not expose adapter-state events (e.g. Web Bluetooth).
+  Stream<bool> get adapterStateChanges => const Stream<bool>.empty();
 
   /// Start a BLE scan. Results are emitted on [scanResults].
   /// If [serviceUuid] is non-null, the scan is filtered to that service.
@@ -40,6 +64,16 @@ abstract class FretTransport {
 
   /// Stream of connection-state changes per device.
   Stream<FretConnectionState> get connectionStates;
+
+  /// Release internal resources (scan / connection-state stream
+  /// controllers, scan subscriptions, etc.).
+  ///
+  /// The default implementation is a no-op so custom transports are
+  /// not forced to provide one. Transports that own long-lived
+  /// resources (e.g. [FlutterBlueTransport]) override this to close
+  /// their stream controllers and cancel platform subscriptions.
+  /// Called by [FretSpark.dispose] during SDK teardown.
+  void dispose() {}
 }
 
 /// A single BLE scan result.

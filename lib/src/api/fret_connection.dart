@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/commands.dart';
+import '../core/fret_permission_result.dart';
 import '../models/brand_config.dart';
 import '../models/fret_device.dart';
 import '../transport/fret_transport.dart';
@@ -77,10 +78,26 @@ class FretConnection {
   }
 
   /// Returns `true` if the OS grants Bluetooth scan/connect permissions.
-  Future<bool> requestPermissions() => _transport.requestPermissions();
+  ///
+  /// Delegates to [requestPermissionsDetailed] for backwards compatibility.
+  Future<bool> requestPermissions() async =>
+      (await _transport.requestPermissionsDetailed()).granted;
+
+  /// Request OS-level permissions and return a detailed
+  /// [FretPermissionResult] that distinguishes between the possible
+  /// outcomes (user-denied, permanently-denied, adapter-off, ...).
+  Future<FretPermissionResult> requestPermissionsDetailed() =>
+      _transport.requestPermissionsDetailed();
 
   /// Returns `true` if the device's Bluetooth adapter is on.
   Future<bool> get isAdapterOn => _transport.isAdapterOn;
+
+  /// Stream of Bluetooth adapter on/off state changes.
+  ///
+  /// Emits `true` when the adapter turns on, `false` when it turns off.
+  /// Delegates to the underlying transport's
+  /// [FretTransport.adapterStateChanges].
+  Stream<bool> get onAdapterStateChanged => _transport.adapterStateChanges;
 
   /// Start a BLE scan. Results are filtered by [BrandConfig.firmwarePatterns]
   /// when an active brand is set.
@@ -185,6 +202,15 @@ class FretConnection {
     _current = null;
     if (dev != null) {
       await dev.dispose();
+    }
+  }
+
+  /// Release internal resources (the brand-auto-detected stream
+  /// controller). Called by `FretSpark.dispose` during SDK teardown
+  /// after [disconnect]. Safe to call multiple times.
+  void dispose() {
+    if (!_brandDetectedController.isClosed) {
+      _brandDetectedController.close();
     }
   }
 

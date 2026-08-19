@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/batch_transfer.dart';
 import '../core/commands.dart';
+import '../core/fret_spark_exception.dart';
 import '../data/chord_dictionary.dart';
 import '../data/scale_dictionary.dart';
 import '../models/fret_color.dart';
@@ -73,14 +74,22 @@ class FretLED {
 
   /// Turn the LED panel on or off.
   Future<void> setPower(FretDevice device, {required bool on}) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await device.send(FretCommand.power, <int>[on ? 0x01 : 0x00]);
   }
 
   /// Set global brightness. Range 0–1000.
   Future<void> setBrightness(FretDevice device, int brightness) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (brightness < 0 || brightness > 1000) {
-      throw ArgumentError('brightness must be 0..1000, got $brightness');
+      throw FretSparkException.validationError(
+        'brightness must be 0..1000, got $brightness.',
+      );
     }
     await device.send(FretCommand.brightness, <int>[
       (brightness >> 8) & 0xFF,
@@ -94,6 +103,9 @@ class FretLED {
 
   /// Set the base color using HSL. Hue: 0–360, Saturation: 0–1000.
   Future<void> setColor(FretDevice device, FretHsl hsl) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await _clearSelection(device);
     await device.send(FretCommand.color, <int>[
@@ -108,6 +120,9 @@ class FretLED {
 
   /// Fill the entire fretboard with a solid RGB color.
   Future<void> fillColor(FretDevice device, FretColor color) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await _clearSelection(device);
     await device.send(
@@ -120,6 +135,14 @@ class FretLED {
 
   /// Switch to a built-in effect mode. [modeId] is 1-based.
   Future<void> setMode(FretDevice device, int modeId) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
+    if (modeId < 1 || modeId > 117) {
+      throw FretSparkException.validationError(
+        'modeId must be 1..117, got $modeId.',
+      );
+    }
     await _clearSelection(device);
     await device.send(FretCommand.mode, <int>[
       (modeId >> 8) & 0xFF,
@@ -129,6 +152,9 @@ class FretLED {
 
   /// Set effect speed. Range 0–255.
   Future<void> setSpeed(FretDevice device, int speed) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (speed < 0 || speed > 255) {
       throw ArgumentError('speed must be 0..255, got $speed');
     }
@@ -137,6 +163,9 @@ class FretLED {
 
   /// Set effect direction. 0 = forward, 1 = reverse.
   Future<void> setDirection(FretDevice device, int direction) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (direction < 0 || direction > 1) {
       throw ArgumentError('direction must be 0 or 1, got $direction');
     }
@@ -155,6 +184,9 @@ class FretLED {
   /// Maps to firmware command 0x02. Must be called *before* any LED
   /// rendering command if the device uses a non-default layout.
   Future<void> setLinearLayout(FretDevice device, {required bool linear}) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.linearLayout, <int>[linear ? 0x01 : 0x00]);
   }
 
@@ -168,6 +200,9 @@ class FretLED {
   /// updated; subscribe to [FretDevice.onLedCountChanged] or call
   /// [FretDevice.queryLedConfig] to refresh it.
   Future<void> setLedCount(FretDevice device, int count) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (count < 1 || count > 0xFFFF) {
       throw ArgumentError('count must be 1..65535, got $count');
     }
@@ -190,8 +225,13 @@ class FretLED {
   /// parity** — without this API, brand apps cannot trigger the music-style
   /// render path that the official app uses.
   Future<void> setMusicStyle(FretDevice device, int styleId) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (styleId < 0 || styleId > 99) {
-      throw ArgumentError('styleId must be 0..99, got $styleId');
+      throw FretSparkException.validationError(
+        'music styleId must be 0..99, got $styleId.',
+      );
     }
     await device.send(FretCommand.musicStyle, <int>[styleId]);
   }
@@ -220,6 +260,9 @@ class FretLED {
     required int second,
     int slot = 0,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (hour < 0 || hour > 23) {
       throw ArgumentError('hour must be 0..23, got $hour');
     }
@@ -231,6 +274,11 @@ class FretLED {
     }
     if (slot < 0 || slot > 255) {
       throw ArgumentError('slot must be 0..255, got $slot');
+    }
+    if (!device.isRtcSynced) {
+      throw FretSparkException.validationError(
+        'RTC time not synchronized. Call setRtcTime() before setTimer().',
+      );
     }
     await device.send(FretCommand.timer, <int>[
       slot,
@@ -269,6 +317,9 @@ class FretLED {
     required int startIndex,
     required List<FretColor> colors,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (startIndex < 0 || startIndex > 255) {
       throw ArgumentError('startIndex must be 0..255, got $startIndex');
     }
@@ -276,9 +327,8 @@ class FretLED {
       throw ArgumentError('colors must not be empty');
     }
     if (colors.length > FretCommand.maxLedsPerFillRangePacket) {
-      throw ArgumentError(
-        'colors.length must be <= ${FretCommand.maxLedsPerFillRangePacket}, '
-        'got ${colors.length}. Split into multiple fillRange calls.',
+      throw FretSparkException.validationError(
+        'fillRange supports at most 79 LEDs per call (got ${colors.length}).',
       );
     }
     await _clearGroupIfActive(device);
@@ -291,6 +341,9 @@ class FretLED {
 
   /// Turn all LEDs on. Equivalent to filling with the rainbow effect.
   Future<void> setAllOn(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await _clearSelection(device);
     await setMode(device, 2);
@@ -301,6 +354,9 @@ class FretLED {
   /// Transitions directly from the previous image to black without an
   /// intermediate black-flash.
   Future<void> clearAll(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await _clearSelection(device);
     await device.send(FretCommand.batchBegin, <int>[0]);
@@ -312,6 +368,9 @@ class FretLED {
   /// Lock the active selection mask so subsequent effect/color commands
   /// only apply to [ledIndices]. Pass an empty list to clear.
   Future<void> lockSelection(FretDevice device, List<int> ledIndices) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (ledIndices.isEmpty) {
       await device.send(FretCommand.selectionMask, <int>[]);
       return;
@@ -327,6 +386,9 @@ class FretLED {
 
   /// Clear the active selection mask. Effects then apply to all LEDs.
   Future<void> unlockSelection(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.selectionMask, <int>[]);
   }
 
@@ -335,6 +397,9 @@ class FretLED {
   /// Light a single note. [string] is 0–5 from high E to low E.
   /// [fret] is 0-indexed (0 = open).
   Future<void> lightNote(FretDevice device, FretNote note) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     final index = _encodeLedIndex(device, note.string, note.fret);
     if (index == null) return; // out of bounds
@@ -352,6 +417,9 @@ class FretLED {
   /// Notes are de-duplicated by LED index; the last write wins. This
   /// matches the firmware's per-pixel overwrite semantics.
   Future<void> lightNotes(FretDevice device, List<FretNote> notes) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (notes.isEmpty) return;
     await _clearGroupIfActive(device);
 
@@ -382,6 +450,9 @@ class FretLED {
 
   /// Clear all learning LEDs.
   Future<void> clearLearningLEDs(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await device.send(FretCommand.learningLed, <int>[0x00]);
   }
@@ -400,6 +471,9 @@ class FretLED {
     required String chordType,
     FretColor color = FretColor.white,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     final fingers = ChordDictionary.fingering(root, chordType);
     if (fingers == null) {
       throw ArgumentError('Unknown chord: $root $chordType');
@@ -422,6 +496,9 @@ class FretLED {
     required ScaleType scale,
     FretColor color = FretColor.white,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     final intervals = ScaleDictionary.intervals(scale);
     if (intervals == null) {
       throw ArgumentError('Unknown scale: $scale');
@@ -462,6 +539,9 @@ class FretLED {
     MusicMode mode, {
     List<int> extraParams = const <int>[],
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await _clearGroupIfActive(device);
     await device.send(FretCommand.musicMode, <int>[mode.code, ...extraParams]);
   }
@@ -471,11 +551,17 @@ class FretLED {
   /// The firmware uses this to decide which audio input drives the
   /// voice-reactive LED pipeline. Pass [MicSource.off] to disable.
   Future<void> setMicSource(FretDevice device, MicSource source) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.micSource, <int>[source.code]);
   }
 
   /// Enable or disable voice-reactive mode. Pass `true` to turn on.
   Future<void> setVoiceMode(FretDevice device, {required bool on}) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.voiceMode, <int>[on ? 0x00 : 0xFF]);
   }
 
@@ -484,6 +570,9 @@ class FretLED {
   /// Higher values make the LED react to quieter sounds. Rapid calls are
   /// safe; the SDK only sends the latest value.
   Future<void> setVoiceSensitivity(FretDevice device, int value) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (value < 0 || value > 255) {
       throw ArgumentError('voice sensitivity must be 0..255, got $value');
     }
@@ -499,6 +588,9 @@ class FretLED {
   /// Call this at ~30–60 Hz while the APP is capturing audio.
   /// High-frequency calls are safe; the SDK optimizes automatically.
   Future<void> injectEnergy(FretDevice device, int volume) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (volume < 0 || volume > 0xFFFF) {
       throw ArgumentError('volume must be 0..65535, got $volume');
     }
@@ -538,6 +630,9 @@ class FretLED {
     required Map<int, int> groupAssignments,
     required Map<int, FretColor> groupColors,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (groupAssignments.isEmpty) {
       await clearGroupMap(device);
       return;
@@ -591,6 +686,9 @@ class FretLED {
     int groupId,
     FretColor color,
   ) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (groupId < 0 || groupId > 255) {
       throw ArgumentError('groupId must be 0..255, got $groupId');
     }
@@ -617,6 +715,9 @@ class FretLED {
     int baseIdx,
     List<int> groupIds,
   ) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     if (baseIdx < 0 || baseIdx >= 400) {
       throw ArgumentError('baseIdx must be 0..399, got $baseIdx');
     }
@@ -635,6 +736,9 @@ class FretLED {
   /// calling it, subsequent non-group commands (setColor / fillColor /
   /// lightNote / ...) will not emit a redundant cleanup frame.
   Future<void> clearGroupMap(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.groupMap, <int>[]);
     _groupActive[device.id] = false;
     _groupChannelForced[device.id] = false;
@@ -647,6 +751,9 @@ class FretLED {
   /// compatibility with older firmware that may not implement the
   /// batch protocol.
   Future<void> flushGroupImmediate(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.groupEnd, <int>[]);
   }
 
@@ -663,9 +770,14 @@ class FretLED {
   /// single packet; if it exceeds the firmware frame limit it is
   /// silently truncated.
   Future<void> setDiyModeList(FretDevice device, List<int> modeIds) async {
-    for (final id in modeIds) {
-      if (id < 1 || id > 117) {
-        throw ArgumentError('modeId must be 1..117, got $id');
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
+    for (final modeId in modeIds) {
+      if (modeId < 1 || modeId > 117) {
+        throw FretSparkException.validationError(
+          'DIY modeId must be 1-117 (got $modeId).',
+        );
       }
     }
     final capped = modeIds.length > (FretCommand.bleRxFrameMaxLen - 1)
@@ -683,6 +795,9 @@ class FretLED {
   /// Brand apps should subscribe to that stream before calling this
   /// method.
   Future<void> queryDiyModeList(FretDevice device) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.queryDiyModeList, <int>[]);
   }
 
@@ -701,6 +816,9 @@ class FretLED {
     FretDevice device, {
     required bool reversed,
   }) async {
+    if (!device.isConnected) {
+      throw FretSparkException.deviceDisconnected();
+    }
     await device.send(FretCommand.setLedIndexMode, <int>[reversed ? 1 : 0]);
   }
 

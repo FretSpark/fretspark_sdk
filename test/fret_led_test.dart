@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fretspark_sdk/src/api/fret_led.dart';
 import 'package:fretspark_sdk/src/core/commands.dart';
+import 'package:fretspark_sdk/src/core/fret_spark_exception.dart';
 import 'package:fretspark_sdk/src/models/fret_color.dart';
 import 'package:fretspark_sdk/src/models/fret_device.dart';
 
@@ -114,20 +115,21 @@ void main() {
     test('rejects styleId=100 (firmware would reset to 0)', () async {
       expect(
         () => led.setMusicStyle(device, 100),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<FretSparkException>()),
       );
     });
 
     test('rejects negative styleId', () async {
       expect(
         () => led.setMusicStyle(device, -1),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<FretSparkException>()),
       );
     });
   });
 
   group('FretLED.setTimer (0x0D)', () {
     test('scheduled power-on: [slot=0, onOff=1, h, m, s, 0x00]', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       await led.setTimer(
         device,
         on: true,
@@ -142,6 +144,7 @@ void main() {
     });
 
     test('scheduled power-off: onOff=0', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       await led.setTimer(
         device,
         on: false,
@@ -153,6 +156,7 @@ void main() {
     });
 
     test('custom slot', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       await led.setTimer(
         device,
         on: true,
@@ -164,7 +168,22 @@ void main() {
       expect(lastFrameOf(ble).params, <int>[2, 0x01, 12, 30, 45, 0x00]);
     });
 
+    test('rejects when RTC not synced (throws FretSparkException)', () async {
+      // No setRtcTime() call: device.isRtcSynced is false.
+      expect(
+        () => led.setTimer(
+          device,
+          on: true,
+          hour: 7,
+          minute: 30,
+          second: 0,
+        ),
+        throwsA(isA<FretSparkException>()),
+      );
+    });
+
     test('rejects hour=24', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       expect(
         () => led.setTimer(device, on: true, hour: 24, minute: 0, second: 0),
         throwsA(isA<ArgumentError>()),
@@ -172,6 +191,7 @@ void main() {
     });
 
     test('rejects minute=60', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       expect(
         () => led.setTimer(device, on: true, hour: 0, minute: 60, second: 0),
         throwsA(isA<ArgumentError>()),
@@ -179,6 +199,7 @@ void main() {
     });
 
     test('rejects second=60', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       expect(
         () => led.setTimer(device, on: true, hour: 0, minute: 0, second: 60),
         throwsA(isA<ArgumentError>()),
@@ -186,6 +207,7 @@ void main() {
     });
 
     test('rejects negative slot', () async {
+      await device.setRtcTime(DateTime(2026, 1, 1, 0, 0, 0));
       expect(
         () => led.setTimer(
           device,
@@ -247,7 +269,7 @@ void main() {
       final colors = List<FretColor>.filled(80, FretColor.white);
       expect(
         () => led.fillRange(device, startIndex: 0, colors: colors),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<FretSparkException>()),
       );
     });
 
